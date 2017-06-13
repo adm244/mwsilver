@@ -48,23 +48,20 @@ OTHER DEALINGS IN THE SOFTWARE.
       [0x007C67DC] + 0x54 -- Script object(?)
 */
 
-#include <cstdio>
-#include <cstdarg>
-#include "types.h"
+#ifndef MW_FUNCTIONS_H
+#define MW_FUNCTIONS_H
 
 internal uint32 globalStatePointer = 0x007C67DC;
 
-//NOTE(adm244): unk0 should be 0x007C67DC
-//typedef int (__cdecl *_ConsolePrint)(uint32 globalStatePointer, char *format, ...);
-//extern const _ConsolePrint ConsolePrint;
+typedef int (__cdecl *_ConsolePrint)(uint32 globalStatePointer, char *format, ...);
+extern const _ConsolePrint ConsolePrint;
 
-//internal const _ConsolePrint ConsolePrint = (_ConsolePrint)0x0040F970;
-internal const uint32 ConsolePrintAddress = 0x0040F970;
+internal const _ConsolePrint ConsolePrint = (_ConsolePrint)0x0040F970;
 internal const uint32 CompileAndRunAddress = 0x0050E5A0;
 
 internal uint32 GetGlobalState()
 {
-  return *(uint32 *)0x007C67DC;
+  return *(uint32 *)globalStatePointer;
 }
 
 internal uint32 GetGlobalScript(uint32 globalState)
@@ -78,28 +75,7 @@ internal uint32 GetGlobalScriptState(uint32 globalState)
   return *(uint32 *)(unknownObject + 0x20);
 }
 
-internal void __cdecl ConsolePrint(char *format, ...)
-{
-  //NOTE(adm244): 260 bytes is used in original function
-  char text[260];
-  
-  va_list list;
-  va_start(list, format);
-  
-  vsprintf_s(text, format, list);
-  
-  va_end(list);
-  
-  __asm {
-    //FIX(adm244): doesn't work (another pointer dereference issue?)
-    push dword ptr text
-    push globalStatePointer
-    
-    call ConsolePrintAddress
-  }
-}
-
-internal void ExecuteScript(char *text)
+internal bool ExecuteScript(char *text)
 {
   uint32 globalState = GetGlobalState();
   uint32 globalScriptState = GetGlobalScriptState(globalState);
@@ -118,4 +94,8 @@ internal void ExecuteScript(char *text)
     
     call CompileAndRunAddress
   }
+  
+  return true;
 }
+
+#endif

@@ -10,8 +10,8 @@ SET hookfile=%source%\dinput_hook\main.cpp
 SET deffile=%source%\dinput_hook\exports.def
 SET hookname=dinput8
 
-SET debug=/Od /Zi /Fe%project% /nologo
-SET release=/O2 /WX /Fe%project% /nologo
+SET debug=/Od /Zi /Fe%project% /nologo /EHsc
+SET release=/O2 /WX /Fe%project% /nologo /EHsc
 SET args=%debug% %files% /LD /link %libs%
 SET hookargs=/nologo /EHsc /Fe%hookname% %hookfile% /LD /link /DEF:%deffile% %libs%
 
@@ -36,6 +36,7 @@ PUSHD "%bin%"
 "%compiler%" %args%
 POPD
 
+COPY "mwsilver.ini" "%bin%"
 ECHO: Build finished.
 GOTO:EOF
 
@@ -46,6 +47,7 @@ IF NOT EXIST "%bin%" MKDIR "%bin%"
 PUSHD "%bin%"
 "%compiler%" %hookargs%
 POPD
+
 COPY "dinput8.ini" "%bin%"
 GOTO:EOF
 

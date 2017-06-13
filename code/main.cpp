@@ -30,15 +30,27 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Main game loop hook
     - Printing to console
     - Execute console command
-  TODO:
     - Execute commands from *.txt file line by line (bat command)
     - Configuration file for batch files
+  TODO:
     - Printing in-game message
+    - Play sound at command activation
+    - Get rid of c++ string and stdio.h
+    - Get rid of CRL
+    - Code cleanup
 */
 
+#include <stdio.h>
+#include <string>
 #include <windows.h>
 
+#include "types.h"
+
+internal HMODULE mwsilver = 0;
+
+#include "utils.cpp"
 #include "mw_functions.cpp"
+#include "batch_processor.cpp"
 
 //NOTE(adm244): addresses for hooks (morrowind 1.6.1820)
 internal const uint32 mainloop_hook_patch_address = 0x00417227;
@@ -47,70 +59,22 @@ internal const uint32 mainloop_hook_return_address = 0x0041722D;
 internal bool isKeyHomeEnabled = true;
 internal bool isKeyEndEnabled = true;
 
-//NOTE(adm244): returns whenever key is pressed or not
-internal int GetKeyPressed(byte key)
-{
-  short keystate = (short)GetAsyncKeyState(key);
-  return( (keystate & 0x8000) > 0 );
-}
-
-//NOTE(adm244): checks if key was pressed and locks its state
-// returns true if key wasn't pressed in previous frame but it is in this one
-// returns false if key is not pressed or is hold down
-internal bool IsActivated(byte key, bool *enabled)
-{
-  if( GetKeyPressed(key) ){
-    if( *enabled ){
-      *enabled = false;
-      return(true);
-    }
-  } else{
-    *enabled = true;
-  }
-  return(false);
-}
-
 internal void GameLoop()
 {
-  if( IsActivated(VK_HOME, &isKeyHomeEnabled) ){
-    ExecuteScript("set gamehour to 0");
-  
-    //CompileAndRun(*addr, "set gamehour to 0", 1, 0, 0, 0, 0);
-    //PrintToConsole(0x007C67DC, "This is a test!");
-    //MessageBox(NULL, "Home key is pressed!", "Yey!", MB_OK);
+  if( IsActivated(&CommandToggle) ) {
+    keys_active = !keys_active;
+    ConsolePrint(globalStatePointer, "[INFO] Commands are %s", keys_active ? "on" : "off");
   }
   
-  if( IsActivated(VK_END, &isKeyEndEnabled) ){
-    //ConsolePrint("This %s a test %d!", "is", 123);
+  if( keys_active ){
+    for( int i = 0; i < batches_count; ++i ){
+      if( IsActivated(batches[i].key, &batches[i].enabled) ){
+        ExecuteBatch(batches[i].filename);
+        ConsolePrint(globalStatePointer, "[STATUS] %s was successeful", batches[i].filename);
+      }
+    }
   }
 }
-
-// ----
-internal void SafeWrite8(uint32 addr, uint32 data)
-{
-  uint32 oldProtect;
-
-  VirtualProtect((void *)addr, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
-  *((uint8 *)addr) = data;
-  VirtualProtect((void *)addr, 4, oldProtect, &oldProtect);
-}
-
-internal void SafeWrite32(uint32 addr, uint32 data)
-{
-  uint32 oldProtect;
-
-  VirtualProtect((void *)addr, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
-  *((uint32 *)addr) = data;
-  VirtualProtect((void *)addr, 4, oldProtect, &oldProtect);
-}
-
-internal void WriteRelJump(uint32 jumpSrc, uint32 jumpTgt)
-{
-  // jmp rel32
-  SafeWrite8(jumpSrc, 0xE9);
-  SafeWrite32(jumpSrc + 1, jumpTgt - jumpSrc - 1 - 4);
-}
-// ----
 
 internal void __declspec(naked) GameLoop_Hook()
 {
@@ -126,14 +90,19 @@ internal void __declspec(naked) GameLoop_Hook()
   }
 }
 
-internal BOOL WINAPI DllMain(HANDLE procHandle, DWORD reason, LPVOID reserved)
+internal BOOL WINAPI DllMain(HMODULE instance, DWORD reason, LPVOID reserved)
 {
   if(reason == DLL_PROCESS_ATTACH) {
-    MessageBox(NULL, "MWSilver is loaded!", "Yey!", MB_OK);
+    mwsilver = instance;
+    //MessageBox(0, "MWSilver is loaded!", "Yey!", MB_OK);
     
     //NOTE(adm244): patching in the morrowind main loop
     WriteRelJump(mainloop_hook_patch_address, (uint32)&GameLoop_Hook);
     SafeWrite8(mainloop_hook_patch_address + 5, 0x90);
+    
+    if( !Initilize() ) {
+      MessageBox(0, "Batch files could not be located!", "Yey!", MB_OK | MB_ICONERROR);
+    }
   }
 
   return TRUE;

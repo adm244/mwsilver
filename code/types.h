@@ -23,7 +23,12 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#ifndef TYPES_H
+#define TYPES_H
+
 #define internal static
 
 typedef unsigned char uint8;
 typedef unsigned long uint32;
+
+#endif
