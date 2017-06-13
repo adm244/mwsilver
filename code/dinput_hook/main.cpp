@@ -25,13 +25,18 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 //IMPORTANT(adm244): SCRATCH VERSION JUST TO GET IT UP WORKING
 
+#include <string>
 #include <windows.h>
 
 #define internal static
+#define CONFIG_FILE "dinput8.ini"
+#define CONFIG_SECTION "proxy"
+#define CONFIG_KEY "proxy_library"
 
 typedef HRESULT __stdcall DInput8CreateFunc(HINSTANCE, DWORD, REFIID, LPVOID *, LPUNKNOWN);
 
-internal HMODULE obsilver = 0;
+internal HMODULE mwsilver = 0;
+internal HMODULE proxylib = 0;
 
 extern "C" HRESULT __stdcall FakeDirectInput8Create(
   HINSTANCE hinst,
@@ -41,18 +46,51 @@ extern "C" HRESULT __stdcall FakeDirectInput8Create(
   LPUNKNOWN punkOuter
 )
 {
-  HMODULE dinput8 = LoadLibrary("c:\\windows\\system32\\dinput8.dll");
-  DInput8CreateFunc *DInput8Create = (DInput8CreateFunc *)GetProcAddress(dinput8, "DirectInput8Create");
+  if( !proxylib ) {
+    proxylib = LoadLibrary("c:\\windows\\system32\\dinput8.dll");
+  }
   
+  DInput8CreateFunc *DInput8Create = (DInput8CreateFunc *)GetProcAddress(proxylib, "DirectInput8Create");
   return DInput8Create(hinst, dwVersion, riidltf, ppvOut, punkOuter);
+}
+
+std::string GetDirectoryFromPath(std::string path)
+{
+  return path.substr(0, path.rfind("\\") + 1);
+}
+
+int IniReadString(char *inifile, char *section, char *param, char *default, char *output, int size)
+{
+  char buffer[MAX_PATH];
+  GetModuleFileNameA(mwsilver, buffer, sizeof(buffer));
+  std::string fname = GetDirectoryFromPath(buffer) + inifile;
+
+  return GetPrivateProfileStringA(section, param, default, output, size, fname.c_str());
+}
+
+internal void LoadProxyLibrary()
+{
+  char proxyname[MAX_PATH];
+  int result = IniReadString(CONFIG_FILE, CONFIG_SECTION, CONFIG_KEY, 0, proxyname, sizeof(proxyname));
+  
+  if( result ) {
+    proxylib = LoadLibrary(proxyname);
+    //MessageBox(0, "Proxy library is loaded!", "Yey!", MB_OK);
+  }
 }
 
 internal BOOL WINAPI DllMain(HANDLE procHandle, DWORD reason, LPVOID reserved)
 {
-  if(reason == DLL_PROCESS_ATTACH)
+  if( reason == DLL_PROCESS_ATTACH )
   {
-    //MessageBox(NULL, "Hook library is loaded!", "Yey!", MB_OK);
-    obsilver = LoadLibrary("mwsilver.dll");
+    //MessageBox(0, "Hook library is loaded!", "Yey!", MB_OK);
+    LoadProxyLibrary();
+    
+    mwsilver = LoadLibrary("mwsilver.dll");
+    if( !mwsilver ) {
+      MessageBox(0, "Plugin mwsilver.dll was not found!", "Plugin dll not found", MB_OK | MB_ICONERROR);
+      return FALSE;
+    }
   }
 
   return TRUE;

@@ -13,7 +13,7 @@ SET hookname=dinput8
 SET debug=/Od /Zi /Fe%project% /nologo
 SET release=/O2 /WX /Fe%project% /nologo
 SET args=%debug% %files% /LD /link %libs%
-SET hookargs=/nologo /Fe%hookname% %hookfile% /LD /link /DEF:%deffile% %libs%
+SET hookargs=/nologo /EHsc /Fe%hookname% %hookfile% /LD /link /DEF:%deffile% %libs%
 
 SET compiler=CL
 REM ###########################
@@ -46,6 +46,7 @@ IF NOT EXIST "%bin%" MKDIR "%bin%"
 PUSHD "%bin%"
 "%compiler%" %hookargs%
 POPD
+COPY "dinput8.ini" "%bin%"
 GOTO:EOF
 
 :SetProjectName

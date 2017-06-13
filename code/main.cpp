@@ -33,6 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
   TODO:
     - Execute commands from *.txt file line by line (bat command)
     - Configuration file for batch files
+    - Printing in-game message
 */
 
 #include <windows.h>
@@ -119,7 +120,7 @@ internal void __declspec(naked) GameLoop_Hook()
     popad
     
     //NOTE(adm244): original instructions
-    mov ecx,dword ptr ds:[0x007C6CDC]
+    mov ecx, dword ptr ds:[0x007C6CDC]
 
     jmp [mainloop_hook_return_address]
   }
