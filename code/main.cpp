@@ -32,12 +32,17 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Execute console command
     - Execute commands from *.txt file line by line (bat command)
     - Configuration file for batch files
-  TODO:
     - Printing in-game message
-    - Play sound at command activation
+  TODO:
+    - Automate hooking proccess (either patch on the call, or something more complicated)
+    - Save game, Auto Save
+    - Message with progress bar (on game load and game save)
+    - Determine loading screen and main menu (probably through hooks on load and new game)
     - Get rid of c++ string and stdio.h
     - Get rid of CRL
     - Code cleanup
+  DROPPED:
+    - Play sound at command activation (use PlaySound in your batch files)
 */
 
 #include <stdio.h>
@@ -56,6 +61,13 @@ internal HMODULE mwsilver = 0;
 internal const uint32 mainloop_hook_patch_address = 0x00417227;
 internal const uint32 mainloop_hook_return_address = 0x0041722D;
 
+//FIX(adm244): loading hooks are not correct (called only when reloading a game)
+internal const uint32 loadstart_hook_patch_address = 0x004C4800;
+internal const uint32 loadstart_hook_return_address = 0x004C4806;
+
+internal const uint32 loadend_hook_patch_address = 0x004C4E7A;
+internal const uint32 loadend_hook_return_address = 0x004C4E7F;
+
 internal bool isKeyHomeEnabled = true;
 internal bool isKeyEndEnabled = true;
 
@@ -64,6 +76,15 @@ internal void GameLoop()
   if( IsActivated(&CommandToggle) ) {
     keys_active = !keys_active;
     ConsolePrint(globalStatePointer, "[INFO] Commands are %s", keys_active ? "on" : "off");
+    
+    char str[260];
+    sprintf(str, "[INFO] Commands are %s", keys_active ? "on" : "off");
+    ShowGameMessage(str, 0, 1);
+    
+    //NOTE(adm244): forgot about "this" pointer
+    /*char buffer[1024];
+    GetRandomSplashPath(buffer, 3);
+    ShowGameMessage(buffer, 0, 1);*/
   }
   
   if( keys_active ){
@@ -74,6 +95,18 @@ internal void GameLoop()
       }
     }
   }
+}
+
+internal void LoadStart()
+{
+  //ShowGameMessage("Loading started...", 0, 1);
+  MessageBox(0, "Loading started...", "Yey!", MB_OK);
+}
+
+internal void LoadEnd()
+{
+  //ShowGameMessage("Loading ended...", 0, 1);
+  MessageBox(0, "Loading ended...", "Yey!", MB_OK);
 }
 
 internal void __declspec(naked) GameLoop_Hook()
@@ -90,18 +123,61 @@ internal void __declspec(naked) GameLoop_Hook()
   }
 }
 
+internal void __declspec(naked) LoadStart_Hook()
+{
+  __asm {
+    pushad
+    call LoadStart
+    popad
+    
+    //NOTE(adm244): original instructions
+    mov eax, dword ptr fs:[0]
+    
+    jmp [loadstart_hook_return_address]
+  }
+}
+
+internal void __declspec(naked) LoadEnd_Hook()
+{
+  __asm {
+    pushad
+    call LoadEnd
+    popad
+    
+    //NOTE(adm244): original instructions
+    mov ecx, dword ptr ss:[esp+0x6C]
+    pop edi
+    
+    jmp [loadend_hook_return_address]
+  }
+}
+
+//NOTE(adm244): patching in the morrowind main loop
+internal void HookMainLoop()
+{
+  WriteRelJump(mainloop_hook_patch_address, (uint32)&GameLoop_Hook);
+  SafeWrite8(mainloop_hook_patch_address + 5, 0x90);
+}
+
+internal void HookLoading()
+{
+  WriteRelJump(loadstart_hook_patch_address, (uint32)&LoadStart_Hook);
+  SafeWrite8(loadstart_hook_patch_address + 5, 0x90);
+  
+  WriteRelJump(loadend_hook_patch_address, (uint32)&LoadEnd_Hook);
+}
+
 internal BOOL WINAPI DllMain(HMODULE instance, DWORD reason, LPVOID reserved)
 {
   if(reason == DLL_PROCESS_ATTACH) {
     mwsilver = instance;
     //MessageBox(0, "MWSilver is loaded!", "Yey!", MB_OK);
     
-    //NOTE(adm244): patching in the morrowind main loop
-    WriteRelJump(mainloop_hook_patch_address, (uint32)&GameLoop_Hook);
-    SafeWrite8(mainloop_hook_patch_address + 5, 0x90);
+    HookMainLoop();
+    //HookLoading();
     
     if( !Initilize() ) {
-      MessageBox(0, "Batch files could not be located!", "Yey!", MB_OK | MB_ICONERROR);
+      MessageBox(0, "Batch files could not be located!", "Error", MB_OK | MB_ICONERROR);
     }
   }
 
