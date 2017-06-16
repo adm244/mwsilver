@@ -52,7 +52,7 @@ internal bool not_initialized = true;
 internal int batches_count = 0;
 
 //NOTE(adm244): overloaded version for CustomCommand structure
-bool IsActivated(CustomCommand *cmd)
+internal bool IsActivated(CustomCommand *cmd)
 {
   return(IsActivated(cmd->key, &cmd->enabled));
 }
@@ -62,7 +62,7 @@ bool IsActivated(CustomCommand *cmd)
 //
 // returns true if at least 1 bat file loaded successefully
 // returns false if no bat files were loaded
-bool InitBatchFiles(BatchData *batches, int *num)
+internal bool InitBatchFiles(BatchData *batches, int *num)
 {
   char buf[MAX_SECTION];
   char *str = buf;

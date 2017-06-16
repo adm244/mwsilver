@@ -27,7 +27,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 /*
   TODO:
-    - search for "Done Initalizing Main"
+    - search for "Done Initalizing Main" (main menu ?)
+    - search for "Loading...Loading Objects from file..." (loading started)
+    - search for "Loading...Done." (loading ended)
     
   RE:
     possible ShowProgressMessage address: 0x005DED20
@@ -56,17 +58,42 @@ OTHER DEALINGS IN THE SOFTWARE.
       void CompileAndRun(uint32 globalScriptState, char *text, int unk2, uint32 unk3, uint32 unk4, int unk5, int unk6);
     
     Object 007C67DC as GlobalState:
-      [0x007C67DC] + 0x34 -- some object pointer
-      [0x007C67DC] + 0x54 -- Script object(?)
-      [0x007C67DC] + 0xDB -- exit flag (byte) (if 0 continue)
-      [0x007C67DC] + 0x32C -- (char *) starting cell (or cell to load?)
-      [0x007C67DC] + 0x01A8 -- some object pointer
+      GlobalState + 0x2C -- (float?) some value
+      GlobalState + 0x34 -- some object pointer
+      GlobalState + 0x4C -- some object pointer
+      GlobalState + 0x54 -- Script object(?)
+      GlobalState + 0x50 -- some object
+      GlobalState + 0x5C -- some object
+      GlobalState + 0x6C -- Quest object(?)
+      GlobalState + 0x90 -- (float) message background transparency (0.0 - 1.0)
+      GlobalState + 0xC0 -- some object pointer
+      GlobalState + 0xD6 -- (boolean?) some flag, multiple uses
+        useDefaultTransparency, if 0 - use specified msg background transparency
+      GlobalState + 0xDB -- (byte) exit flag (if 0 continue)
+      GlobalState + 0x0108 -- some object pointer
+      GlobalState + 0x018C -- some object pointer
+      GlobalState + 0x01A8 -- some object pointer
+      GlobalState + 0x032C -- (char *) starting cell (or cell to load?)
     
     Object [0x007C67DC] + 0x34 as UnkObj01:
-      UnkObj01 + 0x290 - pointer to byte value
+      UnkObj01 + 0x290 -- pointer to byte value
+    
+    Object [[0x007C67DC] + 0xC0] as UnkObj03:
+      UnkObj03 + 0x34 -- (float?) 
     
     Object 007C67E0:
+      method ReloadGame
       ???
+    
+    Object [0x007C6CDC] as TESGame:
+      method MorrowindGameLoop
+      TESGame + 0x0108 -- some object
+    
+    Object [[0x007C6CDC] + 0x0108]:
+      method GetRandomSplashPath
+    
+    Object [[0x007C67DC] + 0x5C] as UnkObj02:
+      UnkObj02 + 0x28 -- ProjectileManager object
 */
 
 #ifndef MW_FUNCTIONS_H
@@ -75,16 +102,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 internal uint32 globalStatePointer = 0x007C67DC;
 
 typedef int (__cdecl *_ConsolePrint)(uint32 globalStatePointer, char *format, ...);
-typedef void (*_ShowGameMessage)(char *message, int unk1, int unk2);
+typedef void (__cdecl *_ShowGameMessage)(char *message, int unk1, int unk2);
 //typedef void (__stdcall *_GetRandomSplashPath)(char *buffer, char flag);
-
-extern const _ConsolePrint ConsolePrint;
-extern const _ShowGameMessage ShowGameMessage;
-//extern const _GetRandomSplashPath GetRandomSplashPath;
 
 internal const _ConsolePrint ConsolePrint = (_ConsolePrint)0x0040F970;
 internal const _ShowGameMessage ShowGameMessage = (_ShowGameMessage)0x005F90C0;
 //internal const _GetRandomSplashPath GetRandomSplashPath = (_GetRandomSplashPath)0x00459830;
+
 internal const uint32 CompileAndRunAddress = 0x0050E5A0;
 
 internal uint32 GetGlobalState()

@@ -1,1 +1,2 @@
-set gamehour to 0
+Set gamehour To 0
+PlaySound, "spellmake success"

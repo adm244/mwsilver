@@ -1,3 +1,4 @@
 PlaceAtPC, "alit_diseased", 3, 5, 0
 PlaceAtPC, "nix-hound", 1, 10, 0
 PlaceAtPC, "atronach_flame", 2, 15, 0
+PlaySound, "spellmake success"

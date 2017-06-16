@@ -33,11 +33,11 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Execute commands from *.txt file line by line (bat command)
     - Configuration file for batch files
     - Printing in-game message
+    - Determine loading screen and main menu (probably through hooks on load and new game)
   TODO:
     - Automate hooking proccess (either patch on the call, or something more complicated)
     - Save game, Auto Save
     - Message with progress bar (on game load and game save)
-    - Determine loading screen and main menu (probably through hooks on load and new game)
     - Get rid of c++ string and stdio.h
     - Get rid of CRL
     - Code cleanup
@@ -56,17 +56,7 @@ internal HMODULE mwsilver = 0;
 #include "utils.cpp"
 #include "mw_functions.cpp"
 #include "batch_processor.cpp"
-
-//NOTE(adm244): addresses for hooks (morrowind 1.6.1820)
-internal const uint32 mainloop_hook_patch_address = 0x00417227;
-internal const uint32 mainloop_hook_return_address = 0x0041722D;
-
-//FIX(adm244): loading hooks are not correct (called only when reloading a game)
-internal const uint32 loadstart_hook_patch_address = 0x004C4800;
-internal const uint32 loadstart_hook_return_address = 0x004C4806;
-
-internal const uint32 loadend_hook_patch_address = 0x004C4E7A;
-internal const uint32 loadend_hook_return_address = 0x004C4E7F;
+#include "hooks.cpp"
 
 internal bool isKeyHomeEnabled = true;
 internal bool isKeyEndEnabled = true;
@@ -97,84 +87,34 @@ internal void GameLoop()
   }
 }
 
-internal void LoadStart()
+internal void FirstLoadStart()
 {
-  //ShowGameMessage("Loading started...", 0, 1);
   MessageBox(0, "Loading started...", "Yey!", MB_OK);
 }
 
-internal void LoadEnd()
+internal void FirstLoadEnd()
 {
-  //ShowGameMessage("Loading ended...", 0, 1);
   MessageBox(0, "Loading ended...", "Yey!", MB_OK);
 }
 
-internal void __declspec(naked) GameLoop_Hook()
+internal void ReloadStart()
 {
-  __asm {
-    pushad
-    call GameLoop
-    popad
-    
-    //NOTE(adm244): original instructions
-    mov ecx, dword ptr ds:[0x007C6CDC]
-
-    jmp [mainloop_hook_return_address]
-  }
+  MessageBox(0, "Reloading started...", "Yey!", MB_OK);
 }
 
-internal void __declspec(naked) LoadStart_Hook()
+internal void ReloadEnd()
 {
-  __asm {
-    pushad
-    call LoadStart
-    popad
-    
-    //NOTE(adm244): original instructions
-    mov eax, dword ptr fs:[0]
-    
-    jmp [loadstart_hook_return_address]
-  }
-}
-
-internal void __declspec(naked) LoadEnd_Hook()
-{
-  __asm {
-    pushad
-    call LoadEnd
-    popad
-    
-    //NOTE(adm244): original instructions
-    mov ecx, dword ptr ss:[esp+0x6C]
-    pop edi
-    
-    jmp [loadend_hook_return_address]
-  }
-}
-
-//NOTE(adm244): patching in the morrowind main loop
-internal void HookMainLoop()
-{
-  WriteRelJump(mainloop_hook_patch_address, (uint32)&GameLoop_Hook);
-  SafeWrite8(mainloop_hook_patch_address + 5, 0x90);
-}
-
-internal void HookLoading()
-{
-  WriteRelJump(loadstart_hook_patch_address, (uint32)&LoadStart_Hook);
-  SafeWrite8(loadstart_hook_patch_address + 5, 0x90);
-  
-  WriteRelJump(loadend_hook_patch_address, (uint32)&LoadEnd_Hook);
+  MessageBox(0, "Reloading ended...", "Yey!", MB_OK);
 }
 
 internal BOOL WINAPI DllMain(HMODULE instance, DWORD reason, LPVOID reserved)
 {
   if(reason == DLL_PROCESS_ATTACH) {
     mwsilver = instance;
-    //MessageBox(0, "MWSilver is loaded!", "Yey!", MB_OK);
     
+    HookFirstLoading();
+    HookReloading();
     HookMainLoop();
-    //HookLoading();
     
     if( !Initilize() ) {
       MessageBox(0, "Batch files could not be located!", "Error", MB_OK | MB_ICONERROR);
