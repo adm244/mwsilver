@@ -126,13 +126,6 @@ internal void __declspec(naked) ReloadEnd_Hook()
   }
 }
 
-//NOTE(adm244): patching in the morrowind main loop
-internal void HookMainLoop()
-{
-  WriteRelJump(mainloop_hook_patch_address, (uint32)&GameLoop_Hook);
-  SafeWrite8(mainloop_hook_patch_address + 5, 0x90);
-}
-
 internal void HookFirstLoading()
 {
   WriteRelJump(firstloadstart_hook_patch_address, (uint32)&FirstLoadStart_Hook);
@@ -147,6 +140,13 @@ internal void HookReloading()
   SafeWrite8(reloadstart_hook_patch_address + 5, 0x90);
   
   WriteRelJump(reloadend_hook_patch_address, (uint32)&ReloadEnd_Hook);
+}
+
+//NOTE(adm244): patching in the morrowind main loop
+internal void HookMainLoop()
+{
+  WriteRelJump(mainloop_hook_patch_address, (uint32)&GameLoop_Hook);
+  SafeWrite8(mainloop_hook_patch_address + 5, 0x90);
 }
 
 #endif

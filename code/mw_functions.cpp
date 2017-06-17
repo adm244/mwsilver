@@ -28,10 +28,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 /*
   TODO:
     - search for "Done Initalizing Main" (main menu ?)
-    - search for "Loading...Loading Objects from file..." (loading started)
-    - search for "Loading...Done." (loading ended)
     
   RE:
+    IsNPCEssential address: 0x004D5EE0
+      [ecx + 0x34] -- flag, bit 2 - essential
+    
     possible ShowProgressMessage address: 0x005DED20
     
     ShowGameMessage address: 0x005F90C0
@@ -58,6 +59,8 @@ OTHER DEALINGS IN THE SOFTWARE.
       void CompileAndRun(uint32 globalScriptState, char *text, int unk2, uint32 unk3, uint32 unk4, int unk5, int unk6);
     
     Object 007C67DC as GlobalState:
+      method GetMessageString
+      
       GlobalState + 0x2C -- (float?) some value
       GlobalState + 0x34 -- some object pointer
       GlobalState + 0x4C -- some object pointer
@@ -68,12 +71,23 @@ OTHER DEALINGS IN THE SOFTWARE.
       GlobalState + 0x90 -- (float) message background transparency (0.0 - 1.0)
       GlobalState + 0xC0 -- some object pointer
       GlobalState + 0xD6 -- (boolean?) some flag, multiple uses
-        useDefaultTransparency, if 0 - use specified msg background transparency
+        useDefaultTransparency, if 0 - use specified message background transparency
       GlobalState + 0xDB -- (byte) exit flag (if 0 continue)
       GlobalState + 0x0108 -- some object pointer
       GlobalState + 0x018C -- some object pointer
       GlobalState + 0x01A8 -- some object pointer
       GlobalState + 0x032C -- (char *) starting cell (or cell to load?)
+    
+    Object ??? as Actor:
+      method void SayDialogueVoice(int): 0x00528F80
+      
+      Actor + 0x14 -- some object pointer
+    
+    Object [Actor + 0x14] as UnkObj04:
+      UnkObj04 + 0x28 -- some object pointer
+    
+    Object [UnkObj04 + 0x28] as UnkObj05:
+      method bool IsNPCEssential(): UnkObj05 + 0xBC
     
     Object [0x007C67DC] + 0x34 as UnkObj01:
       UnkObj01 + 0x290 -- pointer to byte value
@@ -81,7 +95,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     Object [[0x007C67DC] + 0xC0] as UnkObj03:
       UnkObj03 + 0x34 -- (float?) 
     
-    Object 007C67E0:
+    Object 007C67E0 as TES:
       method ReloadGame
       ???
     

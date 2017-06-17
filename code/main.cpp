@@ -33,13 +33,14 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Execute commands from *.txt file line by line (bat command)
     - Configuration file for batch files
     - Printing in-game message
-    - Determine loading screen and main menu (probably through hooks on load and new game)
+    - Determine loading screen and main menu
+    - Queue commands that were activated at loading or main menu
   TODO:
     - Automate hooking proccess (either patch on the call, or something more complicated)
     - Save game, Auto Save
     - Message with progress bar (on game load and game save)
     - Get rid of c++ string and stdio.h
-    - Get rid of CRL
+    - Get rid of CRT
     - Code cleanup
   DROPPED:
     - Play sound at command activation (use PlaySound in your batch files)
@@ -56,55 +57,77 @@ internal HMODULE mwsilver = 0;
 #include "utils.cpp"
 #include "mw_functions.cpp"
 #include "batch_processor.cpp"
+#include "queue.cpp"
 #include "hooks.cpp"
 
-internal bool isKeyHomeEnabled = true;
-internal bool isKeyEndEnabled = true;
+internal HANDLE QueueHandle = 0;
+internal DWORD QueueThreadID = 0;
 
+internal Queue BatchQueue;
+internal bool ActualGameplay = false;
+
+internal DWORD WINAPI QueueHandler(LPVOID data)
+{
+  for(;;) {
+    if( IsActivated(&CommandToggle) ) {
+      keys_active = !keys_active;
+      
+      //TODO(adm244): display it somehow on loading screen
+      if( ActualGameplay ) {
+        char str[260];
+        sprintf(str, "[INFO] Commands are %s", keys_active ? "on" : "off");
+        ShowGameMessage(str, 0, 1);
+      }
+    }
+  
+    if( keys_active ){
+      for( int i = 0; i < batches_count; ++i ){
+        if( IsActivated(batches[i].key, &batches[i].enabled) ){
+          QueuePut(&BatchQueue, (uint32)&batches[i]);
+        }
+      }
+    }
+  }
+}
+
+//NOTE(adm244): maybe patch GameLoop where it will actually be called in game (not main menu or loading)
 internal void GameLoop()
 {
-  if( IsActivated(&CommandToggle) ) {
-    keys_active = !keys_active;
-    ConsolePrint(globalStatePointer, "[INFO] Commands are %s", keys_active ? "on" : "off");
+  if( ActualGameplay ) {
+    uint32 dataPointer;
     
-    char str[260];
-    sprintf(str, "[INFO] Commands are %s", keys_active ? "on" : "off");
-    ShowGameMessage(str, 0, 1);
-    
-    //NOTE(adm244): forgot about "this" pointer
-    /*char buffer[1024];
-    GetRandomSplashPath(buffer, 3);
-    ShowGameMessage(buffer, 0, 1);*/
-  }
-  
-  if( keys_active ){
-    for( int i = 0; i < batches_count; ++i ){
-      if( IsActivated(batches[i].key, &batches[i].enabled) ){
-        ExecuteBatch(batches[i].filename);
-        ConsolePrint(globalStatePointer, "[STATUS] %s was successeful", batches[i].filename);
-      }
+    while( dataPointer = QueueGet(&BatchQueue) ) {
+      BatchData batch = *((BatchData *)dataPointer);
+      
+      ExecuteBatch(batch.filename);
+      
+      char str[260];
+      sprintf(str, "[STATUS] %s was successeful", batch.filename);
+      
+      ConsolePrint(globalStatePointer, str);
+      ShowGameMessage(str, 0, 1);
     }
   }
 }
 
 internal void FirstLoadStart()
 {
-  MessageBox(0, "Loading started...", "Yey!", MB_OK);
+  ActualGameplay = false;
 }
 
 internal void FirstLoadEnd()
 {
-  MessageBox(0, "Loading ended...", "Yey!", MB_OK);
+  ActualGameplay = true;
 }
 
 internal void ReloadStart()
 {
-  MessageBox(0, "Reloading started...", "Yey!", MB_OK);
+  ActualGameplay = false;
 }
 
 internal void ReloadEnd()
 {
-  MessageBox(0, "Reloading ended...", "Yey!", MB_OK);
+  ActualGameplay = true;
 }
 
 internal BOOL WINAPI DllMain(HMODULE instance, DWORD reason, LPVOID reserved)
@@ -115,6 +138,9 @@ internal BOOL WINAPI DllMain(HMODULE instance, DWORD reason, LPVOID reserved)
     HookFirstLoading();
     HookReloading();
     HookMainLoop();
+    
+    QueueInitialize(&BatchQueue);
+    QueueHandle = CreateThread(0, 0, &QueueHandler, 0, 0, &QueueThreadID);
     
     if( !Initilize() ) {
       MessageBox(0, "Batch files could not be located!", "Error", MB_OK | MB_ICONERROR);
