@@ -26,9 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 //IMPORTANT(adm244): SCRATCH VERSION JUST TO GET IT UP WORKING
 
 /*
-  TODO:
-    - search for "Done Initalizing Main" (main menu ?)
-    
   RE:
     IsNPCEssential address: 0x004D5EE0
       [ecx + 0x34] -- flag, bit 2 - essential
@@ -78,6 +75,12 @@ OTHER DEALINGS IN THE SOFTWARE.
       GlobalState + 0x01A8 -- some object pointer
       GlobalState + 0x032C -- (char *) starting cell (or cell to load?)
     
+    Object 007C6CB0 as Settings:
+      method void ChangeShowFPSFlag(bool setFlag): 0x00442B10
+    
+      Settings + 0x14 -- (boolean?) some flag
+        showFPS, first bit
+    
     Object ??? as Actor:
       method void SayDialogueVoice(int): 0x00528F80
       
@@ -96,6 +99,7 @@ OTHER DEALINGS IN THE SOFTWARE.
       UnkObj03 + 0x34 -- (float?) 
     
     Object 007C67E0 as TES:
+      method uint8 SaveGame(char *displayName, char *fileName): 0x004C4250
       method ReloadGame
       ???
     
@@ -113,7 +117,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MW_FUNCTIONS_H
 #define MW_FUNCTIONS_H
 
+internal uint32 globalTES = 0x007C67E0;
 internal uint32 globalStatePointer = 0x007C67DC;
+internal uint32 globalSettings = 0x007C6CB0;
 
 typedef int (__cdecl *_ConsolePrint)(uint32 globalStatePointer, char *format, ...);
 typedef void (__cdecl *_ShowGameMessage)(char *message, int unk1, int unk2);
@@ -124,6 +130,12 @@ internal const _ShowGameMessage ShowGameMessage = (_ShowGameMessage)0x005F90C0;
 //internal const _GetRandomSplashPath GetRandomSplashPath = (_GetRandomSplashPath)0x00459830;
 
 internal const uint32 CompileAndRunAddress = 0x0050E5A0;
+internal const uint32 SaveGameAddress = 0x004C4250;
+
+internal uint32 GetTESObject()
+{
+  return *(uint32 *)globalTES;
+}
 
 internal uint32 GetGlobalState()
 {
@@ -162,6 +174,21 @@ internal bool ExecuteScript(char *text)
   }
   
   return true;
+}
+
+internal uint8 SaveGame(char *displayName, char *fileName)
+{
+  uint32 TESObject = GetTESObject();
+
+  __asm {
+    mov eax, [TESObject]
+    mov ecx, [eax]
+    
+    push displayName
+    push fileName
+    
+    call SaveGameAddress
+  }
 }
 
 #endif

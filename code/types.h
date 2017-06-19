@@ -30,5 +30,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 typedef unsigned char uint8;
 typedef unsigned long uint32;
+typedef unsigned int pointer;
 
 #endif

@@ -12,8 +12,8 @@ SET hookname=dinput8
 
 SET debug=/Od /Zi /Fe%project% /nologo /EHsc
 SET release=/O2 /WX /Fe%project% /nologo /EHsc
-SET args=%debug% %files% /LD /link %libs%
-SET hookargs=/nologo /EHsc /Fe%hookname% %hookfile% /LD /link /DEF:%deffile% %libs%
+SET args=%release% %files% /LD /link %libs%
+SET hookargs=/O2 /WX /nologo /EHsc /Fe%hookname% %hookfile% /LD /link /DEF:%deffile% %libs%
 
 SET compiler=CL
 REM ###########################

@@ -35,9 +35,9 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Printing in-game message
     - Determine loading screen and main menu
     - Queue commands that were activated at loading or main menu
+    - Save game, Auto Save
   TODO:
     - Automate hooking proccess (either patch on the call, or something more complicated)
-    - Save game, Auto Save
     - Message with progress bar (on game load and game save)
     - Get rid of c++ string and stdio.h
     - Get rid of CRT
@@ -52,6 +52,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "types.h"
 
+#define CONFIG_FILE "mwsilver.ini"
+#define CONFIG_SETTINGS_SECTION "settings"
+#define CONFIG_PRESAVE "bSaveGamePreActivation"
+#define CONFIG_POSTSAVE "bSaveGamePostActivation"
 internal HMODULE mwsilver = 0;
 
 #include "utils.cpp"
@@ -65,25 +69,40 @@ internal DWORD QueueThreadID = 0;
 
 internal Queue BatchQueue;
 internal bool ActualGameplay = false;
+internal bool SavePreActivation = false;
+internal bool SavePostActivation = false;
+
+/*internal void DrawText(char *text)
+{
+  HWND mwWindow = FindWindow("Morrowind", 0);
+  HDC mwDC = GetDC(mwWindow);
+  
+  RECT mwWindowRect;
+  GetClientRect(mwWindow, &mwWindowRect);
+  
+  DrawText(mwDC, text, -1, &mwWindowRect, DT_TOP | DT_CENTER);
+}*/
 
 internal DWORD WINAPI QueueHandler(LPVOID data)
 {
   for(;;) {
+    //DrawText("Test message string. Is it working?");
+    
     if( IsActivated(&CommandToggle) ) {
       keys_active = !keys_active;
       
       //TODO(adm244): display it somehow on loading screen
       if( ActualGameplay ) {
-        char str[260];
-        sprintf(str, "[INFO] Commands are %s", keys_active ? "on" : "off");
-        ShowGameMessage(str, 0, 1);
+        char infoString[260];
+        sprintf(infoString, "[INFO] Commands are %s", keys_active ? "on" : "off");
+        ShowGameMessage(infoString, 0, 1);
       }
     }
   
     if( keys_active ){
       for( int i = 0; i < batches_count; ++i ){
         if( IsActivated(batches[i].key, &batches[i].enabled) ){
-          QueuePut(&BatchQueue, (uint32)&batches[i]);
+          QueuePut(&BatchQueue, (pointer)&batches[i]);
         }
       }
     }
@@ -94,18 +113,27 @@ internal DWORD WINAPI QueueHandler(LPVOID data)
 internal void GameLoop()
 {
   if( ActualGameplay ) {
-    uint32 dataPointer;
+    pointer dataPointer;
     
     while( dataPointer = QueueGet(&BatchQueue) ) {
       BatchData batch = *((BatchData *)dataPointer);
+      bool isQueueEmpty = QueueIsEmpty(&BatchQueue);
+      
+      if( SavePreActivation && isQueueEmpty ) {
+        SaveGame("PreActivation", "pre");
+      }
       
       ExecuteBatch(batch.filename);
       
-      char str[260];
-      sprintf(str, "[STATUS] %s was successeful", batch.filename);
+      char statusString[260];
+      sprintf(statusString, "[STATUS] %s was successeful", batch.filename);
       
-      ConsolePrint(globalStatePointer, str);
-      ShowGameMessage(str, 0, 1);
+      ConsolePrint(globalStatePointer, statusString);
+      ShowGameMessage(statusString, 0, 1);
+      
+      if( SavePostActivation && isQueueEmpty ) {
+        SaveGame("PostActivation", "post");
+      }
     }
   }
 }
@@ -130,22 +158,39 @@ internal void ReloadEnd()
   ActualGameplay = true;
 }
 
+internal void SettingsInitialize()
+{
+  SavePreActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_PRESAVE, false);
+  SavePostActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_POSTSAVE, true);
+}
+
+internal BOOL Initialize()
+{
+  HookFirstLoading();
+  HookReloading();
+  HookMainLoop();
+  
+  SettingsInitialize();
+  
+  QueueInitialize(&BatchQueue);
+  QueueHandle = CreateThread(0, 0, &QueueHandler, 0, 0, &QueueThreadID);
+  
+  if( !Initilize() ) {
+    MessageBox(0, "Batch files could not be located!", "Error", MB_OK | MB_ICONERROR);
+  }
+  
+  return TRUE;
+}
+
 internal BOOL WINAPI DllMain(HMODULE instance, DWORD reason, LPVOID reserved)
 {
+  BOOL status = TRUE;
+
   if(reason == DLL_PROCESS_ATTACH) {
     mwsilver = instance;
     
-    HookFirstLoading();
-    HookReloading();
-    HookMainLoop();
-    
-    QueueInitialize(&BatchQueue);
-    QueueHandle = CreateThread(0, 0, &QueueHandler, 0, 0, &QueueThreadID);
-    
-    if( !Initilize() ) {
-      MessageBox(0, "Batch files could not be located!", "Error", MB_OK | MB_ICONERROR);
-    }
+    status = Initialize();
   }
 
-  return TRUE;
+  return status;
 }

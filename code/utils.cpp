@@ -28,12 +28,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UTILS_CPP
 #define UTILS_CPP
 
-std::string GetDirectoryFromPath(std::string path)
+//NOTE(adm244): retrieves a folder path from full path
+internal std::string GetDirectoryFromPath(std::string path)
 {
   return path.substr(0, path.rfind("\\") + 1);
 }
 
-int IniReadInt(char *inifile, char *section, char *param, int def)
+//NOTE(adm244): retrieves an integer value from specified section and value of ini file
+internal int IniReadInt(char *inifile, char *section, char *param, int def)
 {
   char curdir[MAX_PATH];
   GetModuleFileNameA(mwsilver, curdir, sizeof(curdir));
@@ -43,14 +45,14 @@ int IniReadInt(char *inifile, char *section, char *param, int def)
 }
 
 //NOTE(adm244): retrieves a bool value from specified section and value of ini file
-bool IniReadBool(char *inifile, char *section, char *param, bool def)
+internal bool IniReadBool(char *inifile, char *section, char *param, bool def)
 {
   int value = IniReadInt(inifile, section, param, def ? 1 : 0);
   return(value != 0 ? true : false);
 }
 
 //NOTE(adm244): retrieves a string value from specified section and value of ini file and stores it in buffer
-int IniReadString(char *inifile, char *section, char *param, char *default, char *output, int size)
+internal int IniReadString(char *inifile, char *section, char *param, char *default, char *output, int size)
 {
   char buffer[MAX_PATH];
   GetModuleFileNameA(mwsilver, buffer, sizeof(buffer));
@@ -60,7 +62,7 @@ int IniReadString(char *inifile, char *section, char *param, char *default, char
 }
 
 //NOTE(adm244): retrieves all key-value pairs from specified section of ini file and stores it in buffer
-DWORD IniReadSection(char *inifile, char *section, char *buffer, DWORD bufsize)
+internal DWORD IniReadSection(char *inifile, char *section, char *buffer, DWORD bufsize)
 {
   char curdir[MAX_PATH];
   GetModuleFileNameA(mwsilver, curdir, sizeof(curdir));
@@ -92,7 +94,8 @@ internal bool IsActivated(byte key, bool *enabled)
   return(false);
 }
 
-internal void SafeWrite8(uint32 addr, uint32 data)
+//NOTE(adm244): writes byte data at specified address
+internal void SafeWrite8(uint32 addr, uint8 data)
 {
   uint32 oldProtect;
 
@@ -101,6 +104,7 @@ internal void SafeWrite8(uint32 addr, uint32 data)
   VirtualProtect((void *)addr, 4, oldProtect, &oldProtect);
 }
 
+//NOTE(adm244): writes 4-byte data at specified address
 internal void SafeWrite32(uint32 addr, uint32 data)
 {
   uint32 oldProtect;
@@ -110,9 +114,9 @@ internal void SafeWrite32(uint32 addr, uint32 data)
   VirtualProtect((void *)addr, 4, oldProtect, &oldProtect);
 }
 
+//NOTE(adm244): writes a relative jump to specified address
 internal void WriteRelJump(uint32 jumpSrc, uint32 jumpTgt)
 {
-  // jmp rel32
   SafeWrite8(jumpSrc, 0xE9);
   SafeWrite32(jumpSrc + 1, jumpTgt - jumpSrc - 1 - 4);
 }

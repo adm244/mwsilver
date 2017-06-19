@@ -25,18 +25,22 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 //IMPORTANT(adm244): SCRATCH VERSION JUST TO GET IT UP WORKING
 
+/*
+  DROPPED:
+    - make buffer cyclic (put data before start pointer)
+      (no point in doing so, our queue buffer won't be filling faster than it can be processed)
+*/
+
 #ifndef QUEUE_CPP
 #define QUEUE_CPP
 
 #define QUEUE_SIZE 10
 
-//TODO(adm244): make buffer cyclic (put data before start pointer)
-
 struct Queue {
-  uint32 data[QUEUE_SIZE];
+  pointer data[QUEUE_SIZE];
   
-  uint32 start;
-  uint32 end;
+  int start;
+  int end;
 };
 
 internal void QueueInitialize(Queue *queue)
@@ -45,16 +49,16 @@ internal void QueueInitialize(Queue *queue)
   queue->end = 0;
 }
 
-internal void QueuePut(Queue *queue, uint32 dataPointer)
+internal void QueuePut(Queue *queue, pointer dataPointer)
 {
   if( queue->end < QUEUE_SIZE ) {
     queue->data[queue->end++] = dataPointer;
   }
 }
 
-internal uint32 QueueGet(Queue *queue)
+internal pointer QueueGet(Queue *queue)
 {
-  uint32 result = 0;
+  pointer result = 0;
   
   if( queue->start < queue->end ) {
     result = queue->data[queue->start++];
@@ -63,6 +67,16 @@ internal uint32 QueueGet(Queue *queue)
   }
   
   return result;
+}
+
+internal int QueueGetLength(Queue *queue)
+{
+  return queue->end - queue->start;
+}
+
+internal int QueueIsEmpty(Queue *queue)
+{
+  return QueueGetLength(queue) < 1;
 }
 
 #endif
