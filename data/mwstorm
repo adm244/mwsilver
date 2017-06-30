@@ -1,0 +1,11 @@
+@exterioronly
+ChangeWeather, "Ascadian Isles Region", 5
+ChangeWeather, "Ashlands Region", 5
+ChangeWeather, "Azura's Coast Region", 5
+ChangeWeather, "Bitter Coast Region", 5
+ChangeWeather, "Grazelands Region", 5
+ChangeWeather, "Molag Mar Region", 5
+ChangeWeather, "Red Mountain Region", 5
+ChangeWeather, "Sheogorad", 5
+ChangeWeather, "West Gash Region", 5
+PlaySound, "spellmake success"

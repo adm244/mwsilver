@@ -36,6 +36,11 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Determine loading screen and main menu
     - Queue commands that were activated at loading or main menu
     - Save game, Auto Save
+    
+    - Check if player is in interior or exterior
+    - Optional ingame messages
+    - Queue batches that cannot be executed right away
+    - Specify which commands should execute in interior\exterior
   TODO:
     - Automate hooking proccess (either patch on the call, or something more complicated)
     - Message with progress bar (on game load and game save)
@@ -56,7 +61,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CONFIG_SETTINGS_SECTION "settings"
 #define CONFIG_PRESAVE "bSaveGamePreActivation"
 #define CONFIG_POSTSAVE "bSaveGamePostActivation"
+#define CONFIG_SHOWMESSAGES "bShowMessages"
+
 internal HMODULE mwsilver = 0;
+internal uint8 IsInterior = 0;
 
 #include "utils.cpp"
 #include "mw_functions.cpp"
@@ -68,6 +76,10 @@ internal HANDLE QueueHandle = 0;
 internal DWORD QueueThreadID = 0;
 
 internal Queue BatchQueue;
+internal Queue InteriorPendingQueue;
+internal Queue ExteriorPendingQueue;
+
+internal bool ShowMessages = false;
 internal bool ActualGameplay = false;
 internal bool SavePreActivation = false;
 internal bool SavePostActivation = false;
@@ -83,6 +95,73 @@ internal bool SavePostActivation = false;
   DrawText(mwDC, text, -1, &mwWindowRect, DT_TOP | DT_CENTER);
 }*/
 
+internal void DisplayMessage(char *message)
+{
+  if( ShowMessages ) {
+    ShowGameMessage(message, 0, 1);
+  }
+}
+
+internal void DisplaySuccessMessage(char *batchName)
+{
+  char statusString[260];
+  sprintf(statusString, "[STATUS] %s was successeful", batchName);
+  
+  ConsolePrint(globalStatePointer, statusString);
+  DisplayMessage(statusString);
+}
+
+internal void MakePreSave(bool isQueueEmpty)
+{
+  if( SavePreActivation && isQueueEmpty ) {
+    SaveGame("PreActivation", "pre");
+  }
+}
+
+internal void MakePostSave(bool isQueueEmpty)
+{
+  if( SavePostActivation && isQueueEmpty ) {
+    SaveGame("PostActivation", "post");
+  }
+}
+
+internal void ProcessQueue(Queue *queue, bool checkExecState)
+{
+  pointer dataPointer;
+  
+  while( dataPointer = QueueGet(queue) ) {
+    BatchData *batch = (BatchData *)dataPointer;
+    bool isQueueEmpty = QueueIsEmpty(queue);
+    
+    if( checkExecState ) {
+      uint8 executionState = GetBatchExecState(batch->filename);
+    
+      bool executionStateValid = ((executionState == EXEC_EXTERIOR_ONLY) && !IsInterior)
+        || ((executionState == EXEC_INTERIOR_ONLY) && IsInterior)
+        || (executionState == EXEC_DEFAULT);
+      
+      if( !executionStateValid ) {
+        if( executionState == EXEC_EXTERIOR_ONLY ) {
+          QueuePut(&ExteriorPendingQueue, dataPointer);
+          //DisplayMessage("Added to ExteriorQueue");
+        } else {
+          QueuePut(&InteriorPendingQueue, dataPointer);
+          //DisplayMessage("Added to InteriorQueue");
+        }
+        
+        return;
+      }
+    }
+    
+    MakePreSave(isQueueEmpty);
+  
+    ExecuteBatch(batch->filename);
+    DisplaySuccessMessage(batch->filename);
+    
+    MakePostSave(isQueueEmpty);
+  }
+}
+
 internal DWORD WINAPI QueueHandler(LPVOID data)
 {
   for(;;) {
@@ -95,7 +174,7 @@ internal DWORD WINAPI QueueHandler(LPVOID data)
       if( ActualGameplay ) {
         char infoString[260];
         sprintf(infoString, "[INFO] Commands are %s", keys_active ? "on" : "off");
-        ShowGameMessage(infoString, 0, 1);
+        DisplayMessage(infoString);
       }
     }
   
@@ -109,32 +188,20 @@ internal DWORD WINAPI QueueHandler(LPVOID data)
   }
 }
 
-//NOTE(adm244): maybe patch GameLoop where it will actually be called in game (not main menu or loading)
 internal void GameLoop()
 {
   if( ActualGameplay ) {
-    pointer dataPointer;
-    
-    while( dataPointer = QueueGet(&BatchQueue) ) {
-      BatchData batch = *((BatchData *)dataPointer);
-      bool isQueueEmpty = QueueIsEmpty(&BatchQueue);
+    if( IsInterior != IsPlayerInInterior() ) {
+      IsInterior = !IsInterior;
       
-      if( SavePreActivation && isQueueEmpty ) {
-        SaveGame("PreActivation", "pre");
-      }
-      
-      ExecuteBatch(batch.filename);
-      
-      char statusString[260];
-      sprintf(statusString, "[STATUS] %s was successeful", batch.filename);
-      
-      ConsolePrint(globalStatePointer, statusString);
-      ShowGameMessage(statusString, 0, 1);
-      
-      if( SavePostActivation && isQueueEmpty ) {
-        SaveGame("PostActivation", "post");
+      if( IsInterior ) {
+        ProcessQueue(&InteriorPendingQueue, false);
+      } else {
+        ProcessQueue(&ExteriorPendingQueue, false);
       }
     }
+  
+    ProcessQueue(&BatchQueue, true);
   }
 }
 
@@ -162,6 +229,7 @@ internal void SettingsInitialize()
 {
   SavePreActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_PRESAVE, false);
   SavePostActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_POSTSAVE, true);
+  ShowMessages = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES, true);
 }
 
 internal BOOL Initialize()
@@ -173,6 +241,9 @@ internal BOOL Initialize()
   SettingsInitialize();
   
   QueueInitialize(&BatchQueue);
+  QueueInitialize(&InteriorPendingQueue);
+  QueueInitialize(&ExteriorPendingQueue);
+  
   QueueHandle = CreateThread(0, 0, &QueueHandler, 0, 0, &QueueThreadID);
   
   if( !Initilize() ) {

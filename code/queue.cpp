@@ -69,6 +69,11 @@ internal pointer QueueGet(Queue *queue)
   return result;
 }
 
+internal pointer QueuePeek(Queue *queue)
+{
+  return queue->data[queue->start];
+}
+
 internal int QueueGetLength(Queue *queue)
 {
   return queue->end - queue->start;

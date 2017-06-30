@@ -25,13 +25,22 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 //IMPORTANT(adm244): SCRATCH VERSION JUST TO GET IT UP WORKING
 
+/*
+  TODO:
+    - get path to system32 folder from windows
+    - optional warning message if mwsilver.dll is not found
+    - remove c++ string
+    - compile without c-runtime Library
+*/
+
 #include <string>
 #include <windows.h>
 
 #define internal static
 #define CONFIG_FILE "dinput8.ini"
-#define CONFIG_SECTION "proxy"
-#define CONFIG_KEY "proxy_library"
+#define CONFIG_SECTION_PROXY "proxy"
+#define CONFIG_KEY_PROXY "proxy_library"
+#define CONFIG_KEY_MWSE "mwse_library"
 
 typedef HRESULT __stdcall DInput8CreateFunc(HINSTANCE, DWORD, REFIID, LPVOID *, LPUNKNOWN);
 
@@ -68,23 +77,26 @@ int IniReadString(char *inifile, char *section, char *param, char *default, char
   return GetPrivateProfileStringA(section, param, default, output, size, fname.c_str());
 }
 
-internal void LoadProxyLibrary()
+internal HMODULE HookLibrary(char *key)
 {
-  char proxyname[MAX_PATH];
-  int result = IniReadString(CONFIG_FILE, CONFIG_SECTION, CONFIG_KEY, 0, proxyname, sizeof(proxyname));
+  char libraryName[MAX_PATH];
+  HMODULE library = 0;
+  
+  int result = IniReadString(CONFIG_FILE, CONFIG_SECTION_PROXY, key, 0, libraryName, sizeof(libraryName));
   
   if( result ) {
-    proxylib = LoadLibrary(proxyname);
-    //MessageBox(0, "Proxy library is loaded!", "Yey!", MB_OK);
+    library = LoadLibrary(libraryName);
   }
+  
+  return library;
 }
 
 internal BOOL WINAPI DllMain(HANDLE procHandle, DWORD reason, LPVOID reserved)
 {
   if( reason == DLL_PROCESS_ATTACH )
   {
-    //MessageBox(0, "Hook library is loaded!", "Yey!", MB_OK);
-    LoadProxyLibrary();
+    proxylib = HookLibrary(CONFIG_KEY_PROXY);
+    HookLibrary(CONFIG_KEY_MWSE);
     
     mwsilver = LoadLibrary("mwsilver.dll");
     if( !mwsilver ) {

@@ -27,6 +27,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 /*
   RE:
+    IsInterior address: 0x004E22F0
+      bool IsInterior(void);
+  
     IsNPCEssential address: 0x004D5EE0
       [ecx + 0x34] -- flag, bit 2 - essential
     
@@ -101,6 +104,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     Object 007C67E0 as TES:
       method uint8 SaveGame(char *displayName, char *fileName): 0x004C4250
       method ReloadGame
+      method uint32 GetCurrentCell(void): 0x0048E350
       ???
     
     Object [0x007C6CDC] as TESGame:
@@ -119,7 +123,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 internal uint32 globalTES = 0x007C67E0;
 internal uint32 globalStatePointer = 0x007C67DC;
-internal uint32 globalSettings = 0x007C6CB0;
+//internal uint32 globalSettings = 0x007C6CB0;
 
 typedef int (__cdecl *_ConsolePrint)(uint32 globalStatePointer, char *format, ...);
 typedef void (__cdecl *_ShowGameMessage)(char *message, int unk1, int unk2);
@@ -131,6 +135,8 @@ internal const _ShowGameMessage ShowGameMessage = (_ShowGameMessage)0x005F90C0;
 
 internal const uint32 CompileAndRunAddress = 0x0050E5A0;
 internal const uint32 SaveGameAddress = 0x004C4250;
+internal const uint32 GetCurrentCellAddress = 0x0048E350;
+internal const uint32 IsInteriorAddress = 0x004E22F0;
 
 internal uint32 GetTESObject()
 {
@@ -189,6 +195,32 @@ internal uint8 SaveGame(char *displayName, char *fileName)
     
     call SaveGameAddress
   }
+}
+
+internal uint32 GetCurrentCell(uint32 TESObject)
+{
+  __asm {
+    mov ecx, TESObject
+    call GetCurrentCellAddress
+  }
+}
+
+internal uint8 IsPlayerInInterior()
+{
+  uint8 result = 0;
+
+  uint32 TESObject = GetTESObject();
+  uint32 TESCurrentCell = GetCurrentCell(TESObject);
+
+  if( TESCurrentCell ) {
+    __asm {
+      mov ecx, TESCurrentCell
+      call IsInteriorAddress
+      mov result, al
+    }
+  }
+  
+  return result;
 }
 
 #endif

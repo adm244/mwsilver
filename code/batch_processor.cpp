@@ -32,6 +32,18 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define MAX_FILENAME 260
 #define MAX_BATCHES 50
 
+#define BATCH_DEFAULT "@default"
+#define BATCH_INTERIOR "@interior"
+#define BATCH_EXTERIOR "@exterior"
+#define BATCH_INTERIOR_ONLY "@interioronly"
+#define BATCH_EXTERIOR_ONLY "@exterioronly"
+
+#define EXEC_DEFAULT 0
+#define EXEC_INTERIOR 1
+#define EXEC_EXTERIOR 2
+#define EXEC_INTERIOR_ONLY 3
+#define EXEC_EXTERIOR_ONLY 4
+
 struct BatchData{
   char filename[MAX_FILENAME];
   int key;
@@ -93,9 +105,10 @@ internal bool InitBatchFiles(BatchData *batches, int *num)
   return(index > 0);
 }
 
-internal bool ExecuteBatch(char *filename)
+//IMPORTANT(adm244): get rid off duplicated file reading!
+internal uint8 GetBatchExecState(char *filename)
 {
-  bool result = false;
+  uint8 result = EXEC_DEFAULT;
 
   FILE *src = NULL;
   fopen_s(&src, filename, "r");
@@ -106,15 +119,16 @@ internal bool ExecuteBatch(char *filename)
     while( fgets(line, sizeof(line), src) ){
       uint32 lineLen = strlen(line);
       
-      if( lineLen > 1 ){
-        if(line[lineLen - 1] == '\n'){
-          line[lineLen - 1] = 0;
-        }
-        
-        result = ExecuteScript(line);
-        if( !result ){
-          break;
-        }
+      if(line[lineLen - 1] == '\n'){
+        line[lineLen - 1] = 0;
+      }
+    
+      if( strcmp(line, BATCH_EXTERIOR_ONLY) == 0 ) {
+        result = EXEC_EXTERIOR_ONLY;
+        break;
+      } else if( strcmp(line, BATCH_INTERIOR_ONLY) == 0 ) {
+        result = EXEC_INTERIOR_ONLY;
+        break;
       }
     }
 
@@ -124,8 +138,50 @@ internal bool ExecuteBatch(char *filename)
   return result;
 }
 
+internal bool ExecuteBatch(char *filename)
+{
+  bool result = false;
+  
+  FILE *src = NULL;
+  fopen_s(&src, filename, "r");
+
+  if( src ){
+    char line[4096];
+    uint8 executionState = EXEC_DEFAULT;
+    
+    while( fgets(line, sizeof(line), src) ){
+      uint32 lineLen = strlen(line);
+      
+      if(line[lineLen - 1] == '\n'){
+        line[lineLen - 1] = 0;
+      }
+      
+      if( strcmp(line, BATCH_EXTERIOR) == 0 ) {
+        executionState = EXEC_EXTERIOR;
+      } else if( strcmp(line, BATCH_INTERIOR) == 0 ) {
+        executionState = EXEC_INTERIOR;
+      } else if( strcmp(line, BATCH_DEFAULT) == 0 ) {
+        executionState = EXEC_DEFAULT;
+      } else {
+        if( (IsInterior && (executionState == EXEC_INTERIOR))
+         || (!IsInterior && (executionState == EXEC_EXTERIOR))
+         || (executionState == EXEC_DEFAULT) ) {
+          result = ExecuteScript(line);
+          if( !result ) {
+            break;
+          }
+        }
+      }
+    }
+    
+    fclose(src);
+  }
+
+  return result;
+}
+
 //NOTE(adm244): initializes plugin variables
-// returns true if atleast 1 batch file wes successefully loaded
+// returns true if atleast 1 batch file was successefully loaded
 // returns false otherwise
 internal bool Initilize()
 {

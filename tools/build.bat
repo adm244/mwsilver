@@ -11,9 +11,10 @@ SET deffile=%source%\dinput_hook\exports.def
 SET hookname=dinput8
 
 SET debug=/Od /Zi /Fe%project% /nologo /EHsc
-SET release=/O2 /WX /Fe%project% /nologo /EHsc
+SET release=/W2 /Ot /Oi /O2 /WX /Fe%project% /nologo /EHsc
 SET args=%release% %files% /LD /link %libs%
-SET hookargs=/O2 /WX /nologo /EHsc /Fe%hookname% %hookfile% /LD /link /DEF:%deffile% %libs%
+SET hookargs=/W2 /O2 /WX /nologo /EHsc /Fe%hookname% %hookfile% /LD /link /DEF:%deffile% %libs%
+REM use /NODEFAULTLIB
 
 SET compiler=CL
 REM ###########################
