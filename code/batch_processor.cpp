@@ -58,6 +58,7 @@ struct CustomCommand{
 
 internal BatchData batches[MAX_BATCHES];
 internal CustomCommand CommandToggle;
+internal CustomCommand CommandRandom;
 
 internal bool keys_active = true;
 internal bool not_initialized = true;
@@ -193,6 +194,9 @@ internal bool Initilize()
   
   CommandToggle.key = IniReadInt(CONFIG_FILE, "keys", "iKeyToggle", VK_HOME);
   CommandToggle.enabled = true;
+  
+  CommandRandom.key = IniReadInt(CONFIG_FILE, "keys", "iKeyRandomBatch", VK_ADD);
+  CommandRandom.enabled = true;
   
   return(batches_count > 0);
 }

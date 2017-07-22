@@ -78,6 +78,7 @@ internal uint8 IsInterior = 0;
 internal char SaveFileName[STRING_SIZE];
 internal char SaveDisplayName[STRING_SIZE];
 
+#include "randomlib.c"
 #include "utils.cpp"
 #include "mw_functions.cpp"
 #include "batch_processor.cpp"
@@ -193,6 +194,11 @@ internal DWORD WINAPI QueueHandler(LPVOID data)
         if( IsActivated(batches[i].key, &batches[i].enabled) ){
           QueuePut(&BatchQueue, (pointer)&batches[i]);
         }
+      }
+      
+      if( IsActivated(&CommandRandom) ) {
+        int index = RandomInt(0, batches_count - 1);
+        QueuePut(&BatchQueue, (pointer)&batches[index]);
       }
     }
   }
