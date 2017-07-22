@@ -27,6 +27,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 /*
   RE:
+    Morrowind savefile display name is 256 bytes long
+    
     IsInterior address: 0x004E22F0
       bool IsInterior(void);
   

@@ -36,12 +36,14 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Determine loading screen and main menu
     - Queue commands that were activated at loading or main menu
     - Save game, Auto Save
-    
     - Check if player is in interior or exterior
     - Optional ingame messages
     - Queue batches that cannot be executed right away
     - Specify which commands should execute in interior\exterior
+    
+    - Load save filename and display name from config file
   TODO:
+    - Command to activate random batch file
     - Automate hooking proccess (either patch on the call, or something more complicated)
     - Message with progress bar (on game load and game save)
     - Get rid of c++ string and stdio.h
@@ -62,9 +64,19 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CONFIG_PRESAVE "bSaveGamePreActivation"
 #define CONFIG_POSTSAVE "bSaveGamePostActivation"
 #define CONFIG_SHOWMESSAGES "bShowMessages"
+#define CONFIG_SAVEFILE "sSaveFile"
+#define CONFIG_SAVENAME "sSaveName"
+
+#define CONFIG_DEFAULT_SAVEFILE "mwsilver_save"
+#define CONFIG_DEFAULT_SAVENAME "MWSilver Save"
 
 internal HMODULE mwsilver = 0;
 internal uint8 IsInterior = 0;
+
+#define STRING_SIZE 256
+
+internal char SaveFileName[STRING_SIZE];
+internal char SaveDisplayName[STRING_SIZE];
 
 #include "utils.cpp"
 #include "mw_functions.cpp"
@@ -111,16 +123,16 @@ internal void DisplaySuccessMessage(char *batchName)
   DisplayMessage(statusString);
 }
 
-internal void MakePreSave(bool isQueueEmpty)
+internal void MakePreSave()
 {
-  if( SavePreActivation && isQueueEmpty ) {
+  if( SavePreActivation ) {
     SaveGame("PreActivation", "pre");
   }
 }
 
-internal void MakePostSave(bool isQueueEmpty)
+internal void MakePostSave()
 {
-  if( SavePostActivation && isQueueEmpty ) {
+  if( SavePostActivation ) {
     SaveGame("PostActivation", "post");
   }
 }
@@ -143,22 +155,20 @@ internal void ProcessQueue(Queue *queue, bool checkExecState)
       if( !executionStateValid ) {
         if( executionState == EXEC_EXTERIOR_ONLY ) {
           QueuePut(&ExteriorPendingQueue, dataPointer);
-          //DisplayMessage("Added to ExteriorQueue");
         } else {
           QueuePut(&InteriorPendingQueue, dataPointer);
-          //DisplayMessage("Added to InteriorQueue");
         }
         
         return;
       }
     }
     
-    MakePreSave(isQueueEmpty);
+    if (isQueueEmpty) MakePreSave();
   
     ExecuteBatch(batch->filename);
     DisplaySuccessMessage(batch->filename);
     
-    MakePostSave(isQueueEmpty);
+    if (isQueueEmpty) MakePostSave();
   }
 }
 
@@ -230,6 +240,11 @@ internal void SettingsInitialize()
   SavePreActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_PRESAVE, false);
   SavePostActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_POSTSAVE, true);
   ShowMessages = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES, true);
+  
+  IniReadString(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SAVEFILE,
+    CONFIG_DEFAULT_SAVEFILE, SaveFileName, STRING_SIZE);
+  IniReadString(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SAVENAME,
+    CONFIG_DEFAULT_SAVENAME, SaveDisplayName, STRING_SIZE);
 }
 
 internal BOOL Initialize()

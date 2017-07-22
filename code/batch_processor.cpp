@@ -37,6 +37,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define BATCH_EXTERIOR "@exterior"
 #define BATCH_INTERIOR_ONLY "@interioronly"
 #define BATCH_EXTERIOR_ONLY "@exterioronly"
+#define BATCH_SAVEGAME "@savegame"
 
 #define EXEC_DEFAULT 0
 #define EXEC_INTERIOR 1
@@ -162,6 +163,8 @@ internal bool ExecuteBatch(char *filename)
         executionState = EXEC_INTERIOR;
       } else if( strcmp(line, BATCH_DEFAULT) == 0 ) {
         executionState = EXEC_DEFAULT;
+      } else if( strcmp(line, BATCH_SAVEGAME) == 0 ) {
+        SaveGame(SaveDisplayName, SaveFileName);
       } else {
         if( (IsInterior && (executionState == EXEC_INTERIOR))
          || (!IsInterior && (executionState == EXEC_EXTERIOR))
