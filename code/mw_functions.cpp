@@ -27,6 +27,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 /*
   RE:
+    Max script line length is 512 bytes
+    
     Morrowind savefile display name is 256 bytes long
     
     IsInterior address: 0x004E22F0
@@ -53,12 +55,12 @@ OTHER DEALINGS IN THE SOFTWARE.
       
       // globalScriptState - Global Script state object
       // text - Script text
-      // unk2 - some value (1 or 2)
+      // flag - some flag (0, 1 or 2)
       // unk3 - some object (can be null)
       // unk4 - some object | [0x007C67E0] + 0x3C [+ 0x8] | (can be null)
       // unk5 - some object (can be null)
       // unk6 - some object (can be null)
-      void CompileAndRun(uint32 globalScriptState, char *text, int unk2, uint32 unk3, uint32 unk4, int unk5, int unk6);
+      void CompileAndRun(uint32 globalScriptState, char *text, int flag, uint32 unk3, uint32 unk4, int unk5, int unk6);
     
     Object 007C67DC as GlobalState:
       method GetMessageString

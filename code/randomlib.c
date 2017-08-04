@@ -59,7 +59,7 @@ internal int test = FALSE;
   number generator can create 900 million different subsequences -- with
   each subsequence having a length of approximately 10^30.
 */
-internal void RandomInitialise(int ij, int kl)
+internal void RandomInitialize(int ij, int kl)
 {
   double s, t;
   int ii, i, j, k, l, jj, m;
@@ -113,7 +113,7 @@ internal double RandomUniform(void)
 
   /* Make sure the initialisation routine has been called */
   if (!test)
-    RandomInitialise(1802,9373);
+    RandomInitialize(1802,9373);
 
   uni = u[i97-1] - u[j97-1];
   if (uni <= 0.0)
