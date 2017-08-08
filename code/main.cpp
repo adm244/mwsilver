@@ -85,17 +85,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CONFIG_DEFAULT_MESSAGE_TOGGLE_ON "Commands are ON"
 #define CONFIG_DEFAULT_MESSAGE_TOGGLE_OFF "Commands are OFF"
 
-#define CELL_X_START -17
-#define CELL_X_END 22
-#define CELL_X_COUNT 40
-
-struct GridPair {
-  int min;
-  int max;
-};
-
-internal GridPair grid[CELL_X_COUNT];
-
 internal HMODULE mwsilver = 0;
 internal uint8 IsInterior = 0;
 
@@ -241,7 +230,6 @@ internal DWORD WINAPI QueueHandler(LPVOID data)
       if( IsActivated(&CommandRandom) ) {
         int index = RandomInt(0, batches_count - 1);
         QueuePut(&BatchQueue, (pointer)&batches[index]);
-        
         DisplayRandomSuccessMessage(batches[index].filename);
       }
     }
@@ -259,17 +247,6 @@ internal void GameLoop()
       } else {
         ProcessQueue(&ExteriorPendingQueue, false);
       }
-    }
-    
-    if ( IsActivated(&CommandTeleport) ) {
-      int cell_x = RandomInt(CELL_X_START, CELL_X_END);
-      
-      int index = cell_x + 17;
-      int cell_y = RandomInt(grid[index].min, grid[index].max);
-      
-      char buffer[MW_SCRIPT_LINE];
-      sprintf(buffer, "coe, %d, %d", cell_x, cell_y);
-      ExecuteScript(buffer);
     }
   
     ProcessQueue(&BatchQueue, true);
@@ -326,50 +303,6 @@ internal void RandomGeneratorInitialize()
   int kj = ticksPassed % 30081;
   
   RandomInitialize(ij, kj);
-}
-
-internal void InitializeGrid()
-{
-  grid[0].min = 11; grid[0].max = 15; // -17
-  grid[1].min = 10; grid[1].max = 16; // -16
-  grid[2].min = 10; grid[2].max = 16; // -15
-  grid[3].min = 8; grid[3].max = 16; // -14
-  grid[4].min = 7; grid[4].max = 17; // -13
-  grid[5].min = 6; grid[5].max = 18; // -12
-  grid[6].min = 3; grid[6].max = 19; // -11
-  grid[7].min = -4; grid[7].max = 19; // -10
-  grid[8].min = -6; grid[8].max = 19; // -9
-  grid[9].min = -7; grid[9].max = 19; // -8
-  grid[10].min = -8; grid[10].max = 21; // -7
-  grid[11].min = -10; grid[11].max = 23; // -6
-  grid[12].min = -10; grid[12].max = 26; // -5
-  grid[13].min = -11; grid[13].max = 26; // -4
-  grid[14].min = -11; grid[14].max = 26; // -3
-  grid[15].min = -11; grid[15].max = 26; // -2
-  grid[16].min = -12; grid[16].max = 26; // -1
-  grid[17].min = -15; grid[17].max = 26; // 0
-  grid[18].min = -15; grid[18].max = 26; // 1
-  grid[19].min = -15; grid[19].max = 26; // 2
-  grid[20].min = -15; grid[20].max = 26; // 3
-  grid[21].min = -15; grid[21].max = 26; // 4
-  grid[22].min = -14; grid[22].max = 26; // 5
-  grid[23].min = -15; grid[23].max = 26; // 6
-  grid[24].min = -15; grid[24].max = 26; // 7
-  grid[25].min = -15; grid[25].max = 26; // 8
-  grid[26].min = -15; grid[26].max = 25; // 9
-  grid[27].min = -14; grid[27].max = 23; // 10
-  grid[28].min = -14; grid[28].max = 22; // 11
-  grid[29].min = -14; grid[29].max = 22; // 12
-  grid[30].min = -15; grid[30].max = 21; // 13
-  grid[31].min = -15; grid[31].max = 18; // 14
-  grid[32].min = -16; grid[32].max = 17; // 15
-  grid[33].min = -15; grid[33].max = 13; // 16
-  grid[34].min = -15; grid[34].max = 12; // 17
-  grid[35].min = -11; grid[35].max = 11; // 18
-  grid[36].min = -11; grid[36].max = 10; // 19
-  grid[37].min = -11; grid[37].max = 8; // 20
-  grid[38].min = -11; grid[38].max = 8; // 21
-  grid[39].min = -10; grid[39].max = 5; // 22
 }
 
 internal BOOL Initialize()

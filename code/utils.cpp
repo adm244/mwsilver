@@ -28,6 +28,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UTILS_CPP
 #define UTILS_CPP
 
+internal int Absolute(int value)
+{
+  return (value < 0) ? value * -1 : value;
+}
+
 //NOTE(adm244): retrieves a folder path from full path
 internal std::string GetDirectoryFromPath(std::string path)
 {

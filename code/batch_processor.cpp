@@ -38,12 +38,22 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define BATCH_INTERIOR_ONLY "@interioronly"
 #define BATCH_EXTERIOR_ONLY "@exterioronly"
 #define BATCH_SAVEGAME "@savegame"
+#define BATCH_TELEPORT "@teleport"
 
 #define EXEC_DEFAULT 0
 #define EXEC_INTERIOR 1
 #define EXEC_EXTERIOR 2
 #define EXEC_INTERIOR_ONLY 3
 #define EXEC_EXTERIOR_ONLY 4
+
+#define CELL_X_START -14
+#define CELL_X_END 20
+#define CELL_X_COUNT 35
+
+struct GridPair {
+  int min;
+  int max;
+};
 
 struct BatchData{
   char filename[MAX_FILENAME];
@@ -56,10 +66,10 @@ struct CustomCommand{
   bool enabled;
 };
 
+internal GridPair grid[CELL_X_COUNT];
 internal BatchData batches[MAX_BATCHES];
 internal CustomCommand CommandToggle;
 internal CustomCommand CommandRandom;
-internal CustomCommand CommandTeleport;
 
 internal bool keys_active = true;
 internal bool not_initialized = true;
@@ -69,6 +79,62 @@ internal int batches_count = 0;
 internal bool IsActivated(CustomCommand *cmd)
 {
   return(IsActivated(cmd->key, &cmd->enabled));
+}
+
+internal void Teleport()
+{
+  int cell_x = RandomInt(CELL_X_START, CELL_X_END);
+
+  int index = cell_x + Absolute(CELL_X_START);
+  int cell_y = RandomInt(grid[index].min, grid[index].max);
+  
+  char buffer[MW_SCRIPT_LINE];
+  sprintf(buffer, "coe, %d, %d", cell_x, cell_y);
+  ExecuteScript(buffer);
+}
+
+internal void InitializeGrid()
+{
+  //grid[0].min = 11; grid[0].max = 15; // -17
+  //grid[1].min = 10; grid[1].max = 16; // -16
+  //grid[2].min = 10; grid[2].max = 16; // -15
+  grid[0].min = 8;    grid[0].max = 16; // -14
+  grid[1].min = 7;    grid[1].max = 17; // -13
+  grid[2].min = 6;    grid[2].max = 18; // -12
+  grid[3].min = 3;    grid[3].max = 19; // -11
+  grid[4].min = -4;   grid[4].max = 19; // -10
+  grid[5].min = -6;   grid[5].max = 19; // -9
+  grid[6].min = -7;   grid[6].max = 19; // -8
+  grid[7].min = -8;   grid[7].max = 21; // -7
+  grid[8].min = -10;  grid[8].max = 23; // -6
+  grid[9].min = -10;  grid[9].max = 23; // -5
+  grid[10].min = -11; grid[10].max = 23; // -4
+  grid[11].min = -11; grid[11].max = 23; // -3
+  grid[12].min = -11; grid[12].max = 23; // -2
+  grid[13].min = -12; grid[13].max = 23; // -1
+  grid[14].min = -15; grid[14].max = 23; // 0
+  grid[15].min = -15; grid[15].max = 23; // 1
+  grid[16].min = -15; grid[16].max = 23; // 2
+  grid[17].min = -15; grid[17].max = 23; // 3
+  grid[18].min = -15; grid[18].max = 23; // 4
+  grid[19].min = -14; grid[19].max = 23; // 5
+  grid[20].min = -15; grid[20].max = 23; // 6
+  grid[21].min = -15; grid[21].max = 23; // 7
+  grid[22].min = -15; grid[22].max = 23; // 8
+  grid[23].min = -15; grid[23].max = 23; // 9
+  grid[24].min = -14; grid[24].max = 23; // 10
+  grid[25].min = -14; grid[25].max = 22; // 11
+  grid[26].min = -14; grid[26].max = 22; // 12
+  grid[27].min = -15; grid[27].max = 21; // 13
+  grid[28].min = -15; grid[28].max = 18; // 14
+  grid[29].min = -15; grid[29].max = 17; // 15
+  grid[30].min = -15; grid[30].max = 13; // 16
+  grid[31].min = -15; grid[31].max = 12; // 17
+  grid[32].min = -11; grid[32].max = 11; // 18
+  grid[33].min = -11; grid[33].max = 10; // 19
+  grid[34].min = -11; grid[34].max = 8; // 20
+  //grid[38].min = -11; grid[38].max = 8; // 21
+  //grid[39].min = -10; grid[39].max = 5; // 22
 }
 
 //NOTE(adm244): loads a list of batch files and keys that activate them
@@ -169,6 +235,8 @@ internal bool ExecuteBatch(char *filename)
         executionState = EXEC_DEFAULT;
       } else if( strcmp(line, BATCH_SAVEGAME) == 0 ) {
         SaveGame(SaveDisplayName, SaveFileName);
+      } else if( strcmp(line, BATCH_TELEPORT) == 0 ) {
+        Teleport();
       } else {
         if( (IsInterior && (executionState == EXEC_INTERIOR))
          || (!IsInterior && (executionState == EXEC_EXTERIOR))
@@ -200,9 +268,6 @@ internal bool InitilizeBatches()
   
   CommandRandom.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyRandomBatch", VK_ADD);
   CommandRandom.enabled = true;
-  
-  CommandTeleport.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyTeleport", VK_SUBTRACT);
-  CommandTeleport.enabled = true;
   
   return(batches_count > 0);
 }
