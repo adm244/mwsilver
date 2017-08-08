@@ -59,6 +59,7 @@ struct CustomCommand{
 internal BatchData batches[MAX_BATCHES];
 internal CustomCommand CommandToggle;
 internal CustomCommand CommandRandom;
+internal CustomCommand CommandTeleport;
 
 internal bool keys_active = true;
 internal bool not_initialized = true;
@@ -158,6 +159,8 @@ internal bool ExecuteBatch(char *filename)
         line[lineLen - 1] = 0;
       }
       
+      //FIX(adm244): @interioronly and @exterioronly are executed by morrowind
+      
       if( strcmp(line, BATCH_EXTERIOR) == 0 ) {
         executionState = EXEC_EXTERIOR;
       } else if( strcmp(line, BATCH_INTERIOR) == 0 ) {
@@ -187,16 +190,19 @@ internal bool ExecuteBatch(char *filename)
 //NOTE(adm244): initializes plugin variables
 // returns true if atleast 1 batch file was successefully loaded
 // returns false otherwise
-internal bool Initilize()
+internal bool InitilizeBatches()
 {
   keys_active = true;
   InitBatchFiles(batches, &batches_count);
   
-  CommandToggle.key = IniReadInt(CONFIG_FILE, "keys", "iKeyToggle", VK_HOME);
+  CommandToggle.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyToggle", VK_HOME);
   CommandToggle.enabled = true;
   
-  CommandRandom.key = IniReadInt(CONFIG_FILE, "keys", "iKeyRandomBatch", VK_ADD);
+  CommandRandom.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyRandomBatch", VK_ADD);
   CommandRandom.enabled = true;
+  
+  CommandTeleport.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyTeleport", VK_SUBTRACT);
+  CommandTeleport.enabled = true;
   
   return(batches_count > 0);
 }

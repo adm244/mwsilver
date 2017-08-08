@@ -37,7 +37,10 @@ OTHER DEALINGS IN THE SOFTWARE.
     IsNPCEssential address: 0x004D5EE0
       [ecx + 0x34] -- flag, bit 2 - essential
     
-    possible ShowProgressMessage address: 0x005DED20
+    ShowProgressMessage address: 0x005DED20
+      // message - message text
+      // progress - completion procent (0f to 100f)
+      int ShowProgressMessage(char *message, float progress);
     
     ShowGameMessage address: 0x005F90C0
       // message - message text
@@ -125,22 +128,27 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MW_FUNCTIONS_H
 #define MW_FUNCTIONS_H
 
+#define MW_SCRIPT_LINE 512
+
 internal uint32 globalTES = 0x007C67E0;
 internal uint32 globalStatePointer = 0x007C67DC;
 //internal uint32 globalSettings = 0x007C6CB0;
 
 typedef int (__cdecl *_ConsolePrint)(uint32 globalStatePointer, char *format, ...);
 typedef void (__cdecl *_ShowGameMessage)(char *message, int unk1, int unk2);
+typedef void (__cdecl *_ShowProgressMessage)(char *message, float progress);
 //typedef void (__stdcall *_GetRandomSplashPath)(char *buffer, char flag);
 
 internal const _ConsolePrint ConsolePrint = (_ConsolePrint)0x0040F970;
 internal const _ShowGameMessage ShowGameMessage = (_ShowGameMessage)0x005F90C0;
+internal const _ShowProgressMessage ShowProgressMessage = (_ShowProgressMessage)0x005DED20;
 //internal const _GetRandomSplashPath GetRandomSplashPath = (_GetRandomSplashPath)0x00459830;
 
 internal const uint32 CompileAndRunAddress = 0x0050E5A0;
 internal const uint32 SaveGameAddress = 0x004C4250;
 internal const uint32 GetCurrentCellAddress = 0x0048E350;
 internal const uint32 IsInteriorAddress = 0x004E22F0;
+internal const uint32 GetMessageStringAddress = 0x0040F930;
 
 internal uint32 GetTESObject()
 {
@@ -222,6 +230,20 @@ internal uint8 IsPlayerInInterior()
       call IsInteriorAddress
       mov result, al
     }
+  }
+  
+  return result;
+}
+
+internal char * GetMessageString(int index)
+{
+  char *result = 0;
+  uint32 globalState = GetGlobalState();
+  
+  __asm {
+    mov ecx, [globalState]
+    call GetMessageStringAddress
+    mov result, eax
   }
   
   return result;

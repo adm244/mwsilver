@@ -15,13 +15,9 @@ IF NOT EXIST "%ship%" MKDIR "%ship%"
 IF NOT EXIST "%fullshippath%" MKDIR "%fullshippath%"
 
 COPY "%bin%\dinput8.dll" "%fullshippath%"
-COPY "%bin%\dinput8.ini" "%fullshippath%"
 COPY "%bin%\mwsilver.dll" "%fullshippath%"
-COPY "%bin%\mwsilver.ini" "%fullshippath%"
 
-COPY "%data%\mwgold" "%fullshippath%"
-COPY "%data%\mwnight" "%fullshippath%"
-COPY "%data%\mwspawn" "%fullshippath%"
+COPY "%data%\*" "%fullshippath%"
 
 ECHO: Done!
 GOTO:EOF
