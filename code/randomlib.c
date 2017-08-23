@@ -52,7 +52,7 @@ internal int test = FALSE;
   NOTE: The seed variables can have values between:    0 <= IJ <= 31328
                                                        0 <= KL <= 30081
   The random number sequences created by these two seeds are of sufficient
-  length to complete an entire calculation with. For example, if sveral
+  length to complete an entire calculation with. For example, if several
   different groups are working on different parts of the same calculation,
   each group could be assigned its own IJ seed. This would leave each group
   with 30000 choices for the second seed. That is to say, this random

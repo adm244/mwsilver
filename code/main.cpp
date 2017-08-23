@@ -42,9 +42,12 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Specify which commands should execute in interior\exterior
     - Load save filename and display name from config file
     - Command to activate random batch file
-    
     - Get message strings from config file
   TODO:
+    - Change random algorithm a bit
+      Set new seed every N minutes?
+      Remove duplications? (regenerate value if result equls to previous one)
+  
     - Move game independent stuff into statically linked library?
     - Automate hooking proccess (either patch on the call, or something more complicated)
     - Message with progress bar (on game load and game save)
@@ -77,6 +80,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CONFIG_MESSAGE_RANDOM "sMessageRandom"
 #define CONFIG_MESSAGE_TOGGLE_ON "sMessageToggleOn"
 #define CONFIG_MESSAGE_TOGGLE_OFF "sMessageToggleOff"
+#define CONFIG_TIMER "iTimeout"
 
 #define CONFIG_DEFAULT_SAVEFILE "mwsilver_save"
 #define CONFIG_DEFAULT_SAVENAME "MWSilver Save"
@@ -84,8 +88,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CONFIG_DEFAULT_MESSAGE_RANDOM "%s activated"
 #define CONFIG_DEFAULT_MESSAGE_TOGGLE_ON "Commands are ON"
 #define CONFIG_DEFAULT_MESSAGE_TOGGLE_OFF "Commands are OFF"
+#define CONFIG_DEFAULT_TIMER (15 * 60 * 1000)
 
 internal HMODULE mwsilver = 0;
+internal HANDLE TimerQueue = 0;
 internal uint8 IsInterior = 0;
 
 #define STRING_SIZE 256
@@ -116,6 +122,11 @@ internal bool ShowMessagesRandom = true;
 internal bool ActualGameplay = false;
 internal bool SavePreActivation = false;
 internal bool SavePostActivation = false;
+
+internal uint8 IsTimedOut = 0;
+internal uint Timeout = 0;
+
+internal void RandomGeneratorInitialize();
 
 /*internal void DrawText(char *text)
 {
@@ -168,6 +179,26 @@ internal void MakePostSave()
 {
   if( SavePostActivation ) {
     SaveGame("PostActivation", "post");
+  }
+}
+
+internal VOID CALLBACK TimerQueueCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
+{
+  RandomGeneratorInitialize();
+  
+  //MessageBox(0, "Timed out!", "Yey!", MB_OK);
+  IsTimedOut = 1;
+}
+
+internal void TimerCreate(HANDLE timerQueue, uint timeout)
+{
+  HANDLE newTimerQueue;
+  if( !CreateTimerQueueTimer(&newTimerQueue, TimerQueue,
+                            (WAITORTIMERCALLBACK)TimerQueueCallback,
+                            0, timeout, 0, 0) ) {
+    //ErrorExit("TimerCreate");
+    DisplayMessage("Ooops... Timer is dead :'(");
+    DisplayMessage("We're a sad pandas now :(");
   }
 }
 
@@ -238,6 +269,11 @@ internal DWORD WINAPI QueueHandler(LPVOID data)
 
 internal void GameLoop()
 {
+  if( IsTimedOut ) {
+    IsTimedOut = 0;
+    TimerCreate(TimerQueue, Timeout);
+  }
+  
   if( ActualGameplay ) {
     if( IsInterior != IsPlayerInInterior() ) {
       IsInterior = !IsInterior;
@@ -261,6 +297,10 @@ internal void FirstLoadStart()
 internal void FirstLoadEnd()
 {
   ActualGameplay = true;
+  
+  if( TimerQueue ) {
+    TimerCreate(TimerQueue, Timeout);
+  }
 }
 
 internal void ReloadStart()
@@ -293,6 +333,8 @@ internal void SettingsInitialize()
     CONFIG_DEFAULT_MESSAGE_TOGGLE_ON, MessageOn, STRING_SIZE);
   IniReadString(CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE_TOGGLE_OFF,
     CONFIG_DEFAULT_MESSAGE_TOGGLE_OFF, MessageOff, STRING_SIZE);
+  
+  Timeout = IniReadInt(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_TIMER, CONFIG_DEFAULT_TIMER);
 }
 
 internal void RandomGeneratorInitialize()
@@ -320,6 +362,8 @@ internal BOOL Initialize()
   QueueHandle = CreateThread(0, 0, &QueueHandler, 0, 0, &QueueThreadID);
   
   RandomGeneratorInitialize();
+  
+  TimerQueue = CreateTimerQueue();
   
   BOOL result = InitilizeBatches();
   if( !result ) {
