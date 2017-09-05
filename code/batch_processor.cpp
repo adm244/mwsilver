@@ -258,7 +258,7 @@ internal bool ExecuteBatch(char *filename)
 //NOTE(adm244): initializes plugin variables
 // returns true if atleast 1 batch file was successefully loaded
 // returns false otherwise
-internal bool InitilizeBatches()
+internal int InitilizeBatches()
 {
   keys_active = true;
   InitBatchFiles(batches, &batches_count);
@@ -269,7 +269,7 @@ internal bool InitilizeBatches()
   CommandRandom.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyRandomBatch", VK_ADD);
   CommandRandom.enabled = true;
   
-  return(batches_count > 0);
+  return(batches_count);
 }
 
 #endif

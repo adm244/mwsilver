@@ -25,6 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 //IMPORTANT(adm244): SCRATCH VERSION JUST TO GET IT UP WORKING
 
+//IMPORTANT(adm244): CODE'S GETTING MESSY, CLEAN IT!!
+
 /*
   IMPLEMENTED:
     - Main game loop hook
@@ -43,19 +45,27 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Load save filename and display name from config file
     - Command to activate random batch file
     - Get message strings from config file
-  TODO:
     - Change random algorithm a bit
-      Set new seed every N minutes?
-      Remove duplications? (regenerate value if result equls to previous one)
-  
+    - Set new seed every N minutes
+    - Message with progress bar (on game load and game save)
+    - Remove duplications (regenerate value if result equls to previous one)
+  TODO:
+    - Move config code into separate file
+    - Move random code into random.c
+    - Implement a set structure to replace current duplicates removal algorithm
+    - Replace standard library file io with common/fileio
+    - Add dynamic memory allocation support through common/memlib
+    - Rewrite batch file parsing code (get rid of streaming, read entire file and parse it)
+    - Move all platform-dependent code into separate file
+    - Change random algorithm for @teleport command (normal distibution?)
     - Move game independent stuff into statically linked library?
     - Automate hooking proccess (either patch on the call, or something more complicated)
-    - Message with progress bar (on game load and game save)
     - Get rid of c++ string and stdio.h
-    - Get rid of CRT
+    - Get rid of C Runtime Library
     - Code cleanup
   DROPPED:
     - Play sound at command activation (use PlaySound in your batch files)
+    - Test random algorithm and decide if it should be changed (no need to change prng)
 */
 
 #include <stdio.h>
@@ -126,7 +136,45 @@ internal bool SavePostActivation = false;
 internal uint8 IsTimedOut = 0;
 internal uint Timeout = 0;
 
-internal void RandomGeneratorInitialize();
+internal int randomGenerated = 0;
+internal uint8 randomCounters[MAX_BATCHES];
+
+internal void RandomClearCounters()
+{
+  randomGenerated = 0;
+  for( int i = 0; i < MAX_BATCHES; ++i ) {
+    randomCounters[i] = 0;
+  }
+}
+
+internal int GetNextBatchIndex(int batchesCount)
+{
+  if( randomGenerated >= batchesCount ) {
+    RandomClearCounters();
+  }
+  
+  int value;
+  for( ;; ) {
+    value = RandomInt(0, batchesCount - 1);
+    if( randomCounters[value] == 0 ) break;
+  }
+  
+  ++randomGenerated;
+  randomCounters[value] = 1;
+  
+  return value;
+}
+
+internal void RandomGeneratorInitialize(int batchesCount)
+{
+  int ticksPassed = GetTickCount();
+  
+  int ij = ticksPassed % 31328;
+  int kj = ticksPassed % 30081;
+  
+  RandomInitialize(ij, kj);
+  RandomClearCounters();
+}
 
 /*internal void DrawText(char *text)
 {
@@ -184,9 +232,9 @@ internal void MakePostSave()
 
 internal VOID CALLBACK TimerQueueCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 {
-  RandomGeneratorInitialize();
+  //RandomGeneratorInitialize();
+  RandomClearCounters();
   
-  //MessageBox(0, "Timed out!", "Yey!", MB_OK);
   IsTimedOut = 1;
 }
 
@@ -196,9 +244,8 @@ internal void TimerCreate(HANDLE timerQueue, uint timeout)
   if( !CreateTimerQueueTimer(&newTimerQueue, TimerQueue,
                             (WAITORTIMERCALLBACK)TimerQueueCallback,
                             0, timeout, 0, 0) ) {
-    //ErrorExit("TimerCreate");
     DisplayMessage("Ooops... Timer is dead :'(");
-    DisplayMessage("We're a sad pandas now :(");
+    DisplayMessage("We're sad pandas now :(");
   }
 }
 
@@ -259,7 +306,8 @@ internal DWORD WINAPI QueueHandler(LPVOID data)
       }
       
       if( IsActivated(&CommandRandom) ) {
-        int index = RandomInt(0, batches_count - 1);
+        //int index = RandomInt(0, batches_count - 1);
+        int index = GetNextBatchIndex(batches_count);
         QueuePut(&BatchQueue, (pointer)&batches[index]);
         DisplayRandomSuccessMessage(batches[index].filename);
       }
@@ -337,16 +385,6 @@ internal void SettingsInitialize()
   Timeout = IniReadInt(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_TIMER, CONFIG_DEFAULT_TIMER);
 }
 
-internal void RandomGeneratorInitialize()
-{
-  int ticksPassed = GetTickCount();
-  
-  int ij = ticksPassed % 31328;
-  int kj = ticksPassed % 30081;
-  
-  RandomInitialize(ij, kj);
-}
-
 internal BOOL Initialize()
 {
   HookFirstLoading();
@@ -355,24 +393,21 @@ internal BOOL Initialize()
   
   SettingsInitialize();
   
-  QueueInitialize(&BatchQueue);
-  QueueInitialize(&InteriorPendingQueue);
-  QueueInitialize(&ExteriorPendingQueue);
-  
-  QueueHandle = CreateThread(0, 0, &QueueHandler, 0, 0, &QueueThreadID);
-  
-  RandomGeneratorInitialize();
-  
-  TimerQueue = CreateTimerQueue();
-  
-  BOOL result = InitilizeBatches();
-  if( !result ) {
+  int batchesCount = InitilizeBatches();
+  if( batchesCount <= 0 ) {
     MessageBox(0, "Batch files could not be located!", "Error", MB_OK | MB_ICONERROR);
   }
   
+  QueueInitialize(&BatchQueue);
+  QueueInitialize(&InteriorPendingQueue);
+  QueueInitialize(&ExteriorPendingQueue);
+  QueueHandle = CreateThread(0, 0, &QueueHandler, 0, 0, &QueueThreadID);
+  
+  RandomGeneratorInitialize(batchesCount);
+  TimerQueue = CreateTimerQueue();
   InitializeGrid();
   
-  return result;
+  return TRUE;
 }
 
 internal BOOL WINAPI DllMain(HMODULE instance, DWORD reason, LPVOID reserved)
