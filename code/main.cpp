@@ -49,7 +49,16 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Set new seed every N minutes
     - Message with progress bar (on game load and game save)
     - Remove duplications (regenerate value if result equls to previous one)
+    
+    - Autosave location change
   TODO:
+    - Print ingame batch description taken from file (first line?) when random command is activated
+    - @teleport: modify random to be more uniform
+    - Change random algorithm for @teleport command (normal distibution?)
+    - @teleport: re-roll if to close to player cell?
+    - @teleport_solstheim: add new command to teleport within solstheim
+    - Save queue at game save and restore it later
+    
     - Move config code into separate file
     - Move random code into random.c
     - Implement a set structure to replace current duplicates removal algorithm
@@ -57,7 +66,6 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Add dynamic memory allocation support through common/memlib
     - Rewrite batch file parsing code (get rid of streaming, read entire file and parse it)
     - Move all platform-dependent code into separate file
-    - Change random algorithm for @teleport command (normal distibution?)
     - Move game independent stuff into statically linked library?
     - Automate hooking proccess (either patch on the call, or something more complicated)
     - Get rid of c++ string and stdio.h
@@ -91,6 +99,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CONFIG_MESSAGE_TOGGLE_ON "sMessageToggleOn"
 #define CONFIG_MESSAGE_TOGGLE_OFF "sMessageToggleOff"
 #define CONFIG_TIMER "iTimeout"
+#define CONFIG_AUTOSAVE "bAutoSave"
 
 #define CONFIG_DEFAULT_SAVEFILE "mwsilver_save"
 #define CONFIG_DEFAULT_SAVENAME "MWSilver Save"
@@ -99,6 +108,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define CONFIG_DEFAULT_MESSAGE_TOGGLE_ON "Commands are ON"
 #define CONFIG_DEFAULT_MESSAGE_TOGGLE_OFF "Commands are OFF"
 #define CONFIG_DEFAULT_TIMER (15 * 60 * 1000)
+
+#define AUTOSAVE_DISPLAY "AutoSave"
+#define AUTOSAVE_FILENAME "autosave"
 
 internal HMODULE mwsilver = 0;
 internal HANDLE TimerQueue = 0;
@@ -132,6 +144,7 @@ internal bool ShowMessagesRandom = true;
 internal bool ActualGameplay = false;
 internal bool SavePreActivation = false;
 internal bool SavePostActivation = false;
+internal bool AutoSaveEnabled = true;
 
 internal uint8 IsTimedOut = 0;
 internal uint Timeout = 0;
@@ -216,14 +229,21 @@ internal void DisplayRandomSuccessMessage(char *batchName)
   }
 }
 
-internal void MakePreSave()
+internal inline void AutoSave()
+{
+  if( AutoSaveEnabled ) {
+    SaveGame(AUTOSAVE_DISPLAY, AUTOSAVE_FILENAME);
+  }
+}
+
+internal inline void MakePreSave()
 {
   if( SavePreActivation ) {
     SaveGame("PreActivation", "pre");
   }
 }
 
-internal void MakePostSave()
+internal inline void MakePostSave()
 {
   if( SavePostActivation ) {
     SaveGame("PostActivation", "post");
@@ -331,6 +351,8 @@ internal void GameLoop()
       } else {
         ProcessQueue(&ExteriorPendingQueue, false);
       }
+      
+      AutoSave();
     }
   
     ProcessQueue(&BatchQueue, true);
@@ -367,6 +389,7 @@ internal void SettingsInitialize()
   SavePostActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_POSTSAVE, true);
   ShowMessages = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES, true);
   ShowMessagesRandom = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES_RANDOM, true);
+  AutoSaveEnabled = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_AUTOSAVE, true);
   
   IniReadString(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SAVEFILE,
     CONFIG_DEFAULT_SAVEFILE, SaveFileName, STRING_SIZE);
