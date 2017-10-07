@@ -1,3 +1,4 @@
+Add Gold
 @interioronly
 player->AddItem "Gold_001" 1000
 PlaySound, "Item Gold Up"

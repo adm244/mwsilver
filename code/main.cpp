@@ -49,10 +49,11 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Set new seed every N minutes
     - Message with progress bar (on game load and game save)
     - Remove duplications (regenerate value if result equls to previous one)
-    
     - Autosave location change
-  TODO:
+    
     - Print ingame batch description taken from file (first line?) when random command is activated
+  TODO:
+    - Load batches from a "batches" folder
     - @teleport: modify random to be more uniform
     - Change random algorithm for @teleport command (normal distibution?)
     - @teleport: re-roll if to close to player cell?
@@ -298,7 +299,7 @@ internal void ProcessQueue(Queue *queue, bool checkExecState)
     if( isQueueEmpty ) MakePreSave();
   
     ExecuteBatch(batch->filename);
-    DisplaySuccessMessage(batch->filename);
+    DisplaySuccessMessage(batch->description);
     
     if( isQueueEmpty ) MakePostSave();
   }
@@ -329,7 +330,7 @@ internal DWORD WINAPI QueueHandler(LPVOID data)
         //int index = RandomInt(0, batches_count - 1);
         int index = GetNextBatchIndex(batches_count);
         QueuePut(&BatchQueue, (pointer)&batches[index]);
-        DisplayRandomSuccessMessage(batches[index].filename);
+        DisplayRandomSuccessMessage(batches[index].description);
       }
     }
   }

@@ -1,2 +1,3 @@
-Set gamehour To 0
+Bring Night
+set gamehour to 0
 PlaySound, "spellmake success"

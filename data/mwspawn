@@ -1,3 +1,4 @@
+Spawn Mobs
 @exterior
 PlaceAtPC, "alit_diseased", 3, 5, 0
 PlaceAtPC, "nix-hound", 1, 10, 0

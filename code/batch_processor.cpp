@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define MAX_SECTION 32767
 #define MAX_FILENAME 260
+#define MAX_DESCRIPTION 255
 #define MAX_BATCHES 50
 
 #define BATCH_DEFAULT "@default"
@@ -57,6 +58,7 @@ struct GridPair {
 
 struct BatchData{
   char filename[MAX_FILENAME];
+  char description[MAX_DESCRIPTION];
   int key;
   bool enabled;
 };
@@ -158,6 +160,7 @@ internal bool InitBatchFiles(BatchData *batches, int *num)
       *p++ = '\0';
       
       strcpy(batches[index].filename, str);
+      strcpy(batches[index].description, str);
       batches[index].key = (int)strtol(p, &endptr, 0);
       batches[index].enabled = true;
       
@@ -174,6 +177,22 @@ internal bool InitBatchFiles(BatchData *batches, int *num)
   return(index > 0);
 }
 
+internal void ReadBatchDescriptions(BatchData *batches)
+{
+  FILE *file = NULL;
+  char line[MAX_DESCRIPTION];
+  
+  for( int i = 0; i < batches_count; ++i ) {
+    fopen_s(&file, batches[i].filename, "r");
+    
+    if( file ) {
+      if( fgets(line, sizeof(line), file) ) {
+        strcpy(batches[i].description, line);
+      }
+    }
+  }
+}
+
 //IMPORTANT(adm244): get rid off duplicated file reading!
 internal uint8 GetBatchExecState(char *filename)
 {
@@ -184,6 +203,9 @@ internal uint8 GetBatchExecState(char *filename)
   
   if( src ){
     char line[4096];
+    
+    //FIX(adm244): hack
+    fgets(line, sizeof(line), src);
     
     while( fgets(line, sizeof(line), src) ){
       uint32 lineLen = strlen(line);
@@ -217,6 +239,9 @@ internal bool ExecuteBatch(char *filename)
   if( src ){
     char line[4096];
     uint8 executionState = EXEC_DEFAULT;
+    
+    //FIX(adm244): hack
+    fgets(line, sizeof(line), src);
     
     while( fgets(line, sizeof(line), src) ){
       uint32 lineLen = strlen(line);
@@ -262,6 +287,7 @@ internal int InitilizeBatches()
 {
   keys_active = true;
   InitBatchFiles(batches, &batches_count);
+  ReadBatchDescriptions(batches);
   
   CommandToggle.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyToggle", VK_HOME);
   CommandToggle.enabled = true;
