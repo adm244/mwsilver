@@ -50,14 +50,16 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Message with progress bar (on game load and game save)
     - Remove duplications (regenerate value if result equls to previous one)
     - Autosave location change
-    
     - Print ingame batch description taken from file (first line?) when random command is activated
-  TODO:
-    - Load batches from a "batches" folder
-    - @teleport: modify random to be more uniform
+    
     - Change random algorithm for @teleport command (normal distibution?)
-    - @teleport: re-roll if to close to player cell?
+  TODO:
+    - @teleport: determine the current island and teleport within it only
     - @teleport_solstheim: add new command to teleport within solstheim
+    - @teleport: re-roll if to close to player cell?
+    
+    - Delete interactive save after it's loading
+    - Load batches from a "batches" folder
     - Save queue at game save and restore it later
     
     - Move config code into separate file
@@ -75,6 +77,7 @@ OTHER DEALINGS IN THE SOFTWARE.
   DROPPED:
     - Play sound at command activation (use PlaySound in your batch files)
     - Test random algorithm and decide if it should be changed (no need to change prng)
+    - @teleport: modify random to be more uniform (switched to normal distribution)
 */
 
 #include <stdio.h>

@@ -83,12 +83,100 @@ internal bool IsActivated(CustomCommand *cmd)
   return(IsActivated(cmd->key, &cmd->enabled));
 }
 
+struct TeleportData {
+  double mean;
+  double deviation;
+};
+
+struct TeleportRegion {
+  TeleportData x;
+  TeleportData y;
+};
+
 internal void Teleport()
 {
-  int cell_x = RandomInt(CELL_X_START, CELL_X_END);
+  /*int cell_x = RandomInt(CELL_X_START, CELL_X_END);
 
   int index = cell_x + Absolute(CELL_X_START);
-  int cell_y = RandomInt(grid[index].min, grid[index].max);
+  int cell_y = RandomInt(grid[index].min, grid[index].max);*/
+  
+  double mean;
+  double deviation;
+  
+  //double mean = (CELL_X_START + CELL_X_END) / 2;
+  //double deviation = Absolute((double)CELL_X_END - mean) / 3;
+  
+  TeleportRegion region;
+  
+  //FIX(adm244): temporary solution!
+  int rnd = RandomInt(0, 7);
+  switch( rnd ) {
+    case 0: {
+      region.x.mean = 4;
+      region.x.deviation = 4;
+      region.y.mean = 21;
+      region.y.deviation = region.x.deviation;
+    } break;
+    
+    case 1: {
+      region.x.mean = -8;
+      region.x.deviation = 5;
+      region.y.mean = 11;
+      region.y.deviation = region.x.deviation;
+    } break;
+    
+    case 2: {
+      region.x.mean = 10;
+      region.x.deviation = 5;
+      region.y.mean = 10;
+      region.y.deviation = region.x.deviation;
+    } break;
+    
+    case 3: {
+      region.x.mean = 15;
+      region.x.deviation = 4;
+      region.y.mean = 2;
+      region.y.deviation = region.x.deviation;
+    } break;
+    
+    case 4: {
+      region.x.mean = 13;
+      region.x.deviation = 6;
+      region.y.mean = -6;
+      region.y.deviation = region.x.deviation;
+    } break;
+    
+    case 5: {
+      region.x.mean = 3;
+      region.x.deviation = 4;
+      region.y.mean = -9;
+      region.y.deviation = region.x.deviation;
+    } break;
+    
+    case 6: {
+      region.x.mean = -2;
+      region.x.deviation = 5;
+      region.y.mean = 2;
+      region.y.deviation = region.x.deviation;
+    } break;
+    
+    case 7: {
+      region.x.mean = 6;
+      region.x.deviation = 4;
+      region.y.mean = 7;
+      region.y.deviation = region.x.deviation;
+    } break;
+  }
+  
+  int cell_x = (int)RandomGaussian(region.x.mean, region.x.deviation);
+  cell_x = Clamp(cell_x, CELL_X_START, CELL_X_END);
+  
+  int index = cell_x + Absolute(CELL_X_START);
+  mean = (grid[index].min + grid[index].max) / 2;
+  deviation = Absolute(grid[index].max - mean) / 3;
+  
+  int cell_y = (int)RandomGaussian(region.y.mean, region.y.deviation);
+  cell_y = Clamp(cell_y, grid[index].min, grid[index].max);
   
   char buffer[MW_SCRIPT_LINE];
   sprintf(buffer, "coe, %d, %d", cell_x, cell_y);

@@ -28,9 +28,22 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef UTILS_CPP
 #define UTILS_CPP
 
+internal int Clamp(int value, int min, int max)
+{
+  if( value < min ) return min;
+  if( value > max ) return max;
+  
+  return value;
+}
+
 internal int Absolute(int value)
 {
   return (value < 0) ? value * -1 : value;
+}
+
+internal double Absolute(double value)
+{
+  return (value < 0) ? value * -1.0f : value;
 }
 
 //NOTE(adm244): retrieves a folder path from full path
