@@ -51,8 +51,9 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Remove duplications (regenerate value if result equls to previous one)
     - Autosave location change
     - Print ingame batch description taken from file (first line?) when random command is activated
-    
     - Change random algorithm for @teleport command (normal distibution?)
+    
+    - Disable autosave at teleportation
   TODO:
     - @teleport: determine the current island and teleport within it only
     - @teleport_solstheim: add new command to teleport within solstheim
@@ -356,8 +357,11 @@ internal void GameLoop()
         ProcessQueue(&ExteriorPendingQueue, false);
       }
       
-      AutoSave();
+      if( !temp_teleportActive ) {
+        AutoSave();
+      }
     }
+    temp_teleportActive = false;
   
     ProcessQueue(&BatchQueue, true);
   }

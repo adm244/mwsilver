@@ -77,6 +77,8 @@ internal bool keys_active = true;
 internal bool not_initialized = true;
 internal int batches_count = 0;
 
+internal bool temp_teleportActive = false;
+
 //NOTE(adm244): overloaded version for CustomCommand structure
 internal bool IsActivated(CustomCommand *cmd)
 {
@@ -95,6 +97,8 @@ struct TeleportRegion {
 
 internal void Teleport()
 {
+  temp_teleportActive = true;
+
   /*int cell_x = RandomInt(CELL_X_START, CELL_X_END);
 
   int index = cell_x + Absolute(CELL_X_START);
