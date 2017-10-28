@@ -47,9 +47,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define EXEC_INTERIOR_ONLY 3
 #define EXEC_EXTERIOR_ONLY 4
 
-#define CELL_X_START -14
-#define CELL_X_END 20
-#define CELL_X_COUNT 35
+#define MAIN_GRID_CELL_X_START -14
+#define MAIN_GRID_CELL_X_END 20
+#define MAIN_GRID_CELL_X_COUNT 35
+
+#define SOLS_GRID_CELL_X_START -27
+#define SOLS_GRID_CELL_X_END -17
+#define SOLS_GRID_CELL_X_COUNT 11
 
 struct GridPair {
   int min;
@@ -68,7 +72,9 @@ struct CustomCommand{
   bool enabled;
 };
 
-internal GridPair grid[CELL_X_COUNT];
+internal GridPair mainGrid[MAIN_GRID_CELL_X_COUNT];
+internal GridPair solstheimGrid[SOLS_GRID_CELL_X_COUNT];
+
 internal BatchData batches[MAX_BATCHES];
 internal CustomCommand CommandToggle;
 internal CustomCommand CommandRandom;
@@ -95,24 +101,39 @@ struct TeleportRegion {
   TeleportData y;
 };
 
-internal void Teleport()
+internal bool IsOnSolstheim(TESCell *cell)
 {
-  temp_teleportActive = true;
+  bool result = false;
 
-  /*int cell_x = RandomInt(CELL_X_START, CELL_X_END);
+  if( IsCellInterior(cell) ) {
+    //TODO(adm244): get list of solstheim interiors and check against them
+  } else {
+    //FIX(adm244): move region name into string array and compare in a loop
+    
+    if( !strncmp(cell->region->name, "Hirstaang Forest Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->name, "Brodir Grove Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->name, "Isinfier Plains Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->name, "Moesring Mountains Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->name, "Felsaad Coast Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->name, "Thirsk Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    }
+  }
+  
+  return result;
+}
 
-  int index = cell_x + Absolute(CELL_X_START);
-  int cell_y = RandomInt(grid[index].min, grid[index].max);*/
-  
-  double mean;
-  double deviation;
-  
-  //double mean = (CELL_X_START + CELL_X_END) / 2;
-  //double deviation = Absolute((double)CELL_X_END - mean) / 3;
-  
+internal TeleportRegion GetRandomTeleportRegion()
+{
   TeleportRegion region;
   
   //FIX(adm244): temporary solution!
+  //FIX(adm244): move these into TeleportRegion array
   int rnd = RandomInt(0, 7);
   switch( rnd ) {
     case 0: {
@@ -172,63 +193,115 @@ internal void Teleport()
     } break;
   }
   
-  int cell_x = (int)RandomGaussian(region.x.mean, region.x.deviation);
-  cell_x = Clamp(cell_x, CELL_X_START, CELL_X_END);
+  return region;
+}
+
+internal void GetRandomSolstheimCell(int *cellX, int *cellY)
+{
+  //TODO(adm244): change to normal distribution
+  int x = RandomInt(SOLS_GRID_CELL_X_START, SOLS_GRID_CELL_X_END);
   
-  int index = cell_x + Absolute(CELL_X_START);
-  mean = (grid[index].min + grid[index].max) / 2;
-  deviation = Absolute(grid[index].max - mean) / 3;
+  int index = x + Absolute(SOLS_GRID_CELL_X_START);
+  int minY = solstheimGrid[index].min;
+  int maxY = solstheimGrid[index].max;
+  int y = RandomInt(minY, maxY);
   
-  int cell_y = (int)RandomGaussian(region.y.mean, region.y.deviation);
-  cell_y = Clamp(cell_y, grid[index].min, grid[index].max);
+  *cellX = x;
+  *cellY = y;
+}
+
+internal void GetRandomMainLandCell(int *cellX, int *cellY)
+{
+  double mean;
+  double deviation;
+  
+  TeleportRegion region = GetRandomTeleportRegion();
+  
+  int x = (int)RandomGaussian(region.x.mean, region.x.deviation);
+  x = Clamp(x, MAIN_GRID_CELL_X_START, MAIN_GRID_CELL_X_END);
+  
+  int index = x + Absolute(MAIN_GRID_CELL_X_START);
+  mean = (mainGrid[index].min + mainGrid[index].max) / 2;
+  deviation = Absolute(mainGrid[index].max - mean) / 3;
+  
+  int y = (int)RandomGaussian(region.y.mean, region.y.deviation);
+  y = Clamp(y, mainGrid[index].min, mainGrid[index].max);
+  
+  *cellX = x;
+  *cellY = y;
+}
+
+internal void Teleport()
+{
+  temp_teleportActive = true;
+  
+  int cell_x;
+  int cell_y;
+  
+  TESCell *currentCell = GetCurrentCell(GetTESObject());
+  if( IsOnSolstheim(currentCell) ) {
+    GetRandomSolstheimCell(&cell_x, &cell_y);
+  } else {
+    GetRandomMainLandCell(&cell_x, &cell_y);
+  }
   
   char buffer[MW_SCRIPT_LINE];
   sprintf(buffer, "coe, %d, %d", cell_x, cell_y);
   ExecuteScript(buffer);
 }
 
-internal void InitializeGrid()
+internal void InitializeMainGrid()
 {
-  //grid[0].min = 11; grid[0].max = 15; // -17
-  //grid[1].min = 10; grid[1].max = 16; // -16
-  //grid[2].min = 10; grid[2].max = 16; // -15
-  grid[0].min = 8;    grid[0].max = 16; // -14
-  grid[1].min = 7;    grid[1].max = 17; // -13
-  grid[2].min = 6;    grid[2].max = 18; // -12
-  grid[3].min = 3;    grid[3].max = 19; // -11
-  grid[4].min = -4;   grid[4].max = 19; // -10
-  grid[5].min = -6;   grid[5].max = 19; // -9
-  grid[6].min = -7;   grid[6].max = 19; // -8
-  grid[7].min = -8;   grid[7].max = 21; // -7
-  grid[8].min = -10;  grid[8].max = 23; // -6
-  grid[9].min = -10;  grid[9].max = 23; // -5
-  grid[10].min = -11; grid[10].max = 23; // -4
-  grid[11].min = -11; grid[11].max = 23; // -3
-  grid[12].min = -11; grid[12].max = 23; // -2
-  grid[13].min = -12; grid[13].max = 23; // -1
-  grid[14].min = -15; grid[14].max = 23; // 0
-  grid[15].min = -15; grid[15].max = 23; // 1
-  grid[16].min = -15; grid[16].max = 23; // 2
-  grid[17].min = -15; grid[17].max = 23; // 3
-  grid[18].min = -15; grid[18].max = 23; // 4
-  grid[19].min = -14; grid[19].max = 23; // 5
-  grid[20].min = -15; grid[20].max = 23; // 6
-  grid[21].min = -15; grid[21].max = 23; // 7
-  grid[22].min = -15; grid[22].max = 23; // 8
-  grid[23].min = -15; grid[23].max = 23; // 9
-  grid[24].min = -14; grid[24].max = 23; // 10
-  grid[25].min = -14; grid[25].max = 22; // 11
-  grid[26].min = -14; grid[26].max = 22; // 12
-  grid[27].min = -15; grid[27].max = 21; // 13
-  grid[28].min = -15; grid[28].max = 18; // 14
-  grid[29].min = -15; grid[29].max = 17; // 15
-  grid[30].min = -15; grid[30].max = 13; // 16
-  grid[31].min = -15; grid[31].max = 12; // 17
-  grid[32].min = -11; grid[32].max = 11; // 18
-  grid[33].min = -11; grid[33].max = 10; // 19
-  grid[34].min = -11; grid[34].max = 8; // 20
-  //grid[38].min = -11; grid[38].max = 8; // 21
-  //grid[39].min = -10; grid[39].max = 5; // 22
+  mainGrid[0].min = 8;    mainGrid[0].max = 16; // -14
+  mainGrid[1].min = 7;    mainGrid[1].max = 17; // -13
+  mainGrid[2].min = 6;    mainGrid[2].max = 18; // -12
+  mainGrid[3].min = 3;    mainGrid[3].max = 19; // -11
+  mainGrid[4].min = -4;   mainGrid[4].max = 19; // -10
+  mainGrid[5].min = -6;   mainGrid[5].max = 19; // -9
+  mainGrid[6].min = -7;   mainGrid[6].max = 19; // -8
+  mainGrid[7].min = -8;   mainGrid[7].max = 21; // -7
+  mainGrid[8].min = -10;  mainGrid[8].max = 23; // -6
+  mainGrid[9].min = -10;  mainGrid[9].max = 23; // -5
+  mainGrid[10].min = -11; mainGrid[10].max = 23; // -4
+  mainGrid[11].min = -11; mainGrid[11].max = 23; // -3
+  mainGrid[12].min = -11; mainGrid[12].max = 23; // -2
+  mainGrid[13].min = -12; mainGrid[13].max = 23; // -1
+  mainGrid[14].min = -15; mainGrid[14].max = 23; // 0
+  mainGrid[15].min = -15; mainGrid[15].max = 23; // 1
+  mainGrid[16].min = -15; mainGrid[16].max = 23; // 2
+  mainGrid[17].min = -15; mainGrid[17].max = 23; // 3
+  mainGrid[18].min = -15; mainGrid[18].max = 23; // 4
+  mainGrid[19].min = -14; mainGrid[19].max = 23; // 5
+  mainGrid[20].min = -15; mainGrid[20].max = 23; // 6
+  mainGrid[21].min = -15; mainGrid[21].max = 23; // 7
+  mainGrid[22].min = -15; mainGrid[22].max = 23; // 8
+  mainGrid[23].min = -15; mainGrid[23].max = 23; // 9
+  mainGrid[24].min = -14; mainGrid[24].max = 23; // 10
+  mainGrid[25].min = -14; mainGrid[25].max = 22; // 11
+  mainGrid[26].min = -14; mainGrid[26].max = 22; // 12
+  mainGrid[27].min = -15; mainGrid[27].max = 21; // 13
+  mainGrid[28].min = -15; mainGrid[28].max = 18; // 14
+  mainGrid[29].min = -15; mainGrid[29].max = 17; // 15
+  mainGrid[30].min = -15; mainGrid[30].max = 13; // 16
+  mainGrid[31].min = -15; mainGrid[31].max = 12; // 17
+  mainGrid[32].min = -11; mainGrid[32].max = 11; // 18
+  mainGrid[33].min = -11; mainGrid[33].max = 10; // 19
+  mainGrid[34].min = -11; mainGrid[34].max = 8; // 20
+}
+
+internal void InitializeSolstheimGrid()
+{
+  solstheimGrid[0].min = 19; solstheimGrid[0].max = 27; // -27
+  solstheimGrid[1].min = 17; solstheimGrid[1].max = 27; // -26
+  solstheimGrid[2].min = 16; solstheimGrid[2].max = 27; // -25
+  solstheimGrid[3].min = 15; solstheimGrid[3].max = 27; // -24
+  solstheimGrid[4].min = 15; solstheimGrid[4].max = 27; // -23
+  solstheimGrid[5].min = 16; solstheimGrid[5].max = 27; // -22
+  solstheimGrid[6].min = 17; solstheimGrid[6].max = 27; // -21
+  solstheimGrid[7].min = 17; solstheimGrid[7].max = 27; // -20
+  solstheimGrid[8].min = 17; solstheimGrid[8].max = 26; // -19
+  solstheimGrid[9].min = 17; solstheimGrid[9].max = 26; // -18
+  solstheimGrid[10].min = 24; solstheimGrid[10].max = 25; // -17
 }
 
 //NOTE(adm244): loads a list of batch files and keys that activate them

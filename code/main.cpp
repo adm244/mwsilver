@@ -52,14 +52,12 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Autosave location change
     - Print ingame batch description taken from file (first line?) when random command is activated
     - Change random algorithm for @teleport command (normal distibution?)
-    
     - Disable autosave at teleportation
-  TODO:
+    
     - @teleport: determine the current island and teleport within it only
-    - @teleport_solstheim: add new command to teleport within solstheim
+  TODO:
     - @teleport: re-roll if to close to player cell?
     
-    - Delete interactive save after it's loading
     - Load batches from a "batches" folder
     - Save queue at game save and restore it later
     
@@ -79,6 +77,8 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Play sound at command activation (use PlaySound in your batch files)
     - Test random algorithm and decide if it should be changed (no need to change prng)
     - @teleport: modify random to be more uniform (switched to normal distribution)
+    - @teleport_solstheim: add new command to teleport within solstheim (checking which island player is on)
+    - Delete interactive save after it's loading (useless)
 */
 
 #include <stdio.h>
@@ -119,7 +119,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 internal HMODULE mwsilver = 0;
 internal HANDLE TimerQueue = 0;
-internal uint8 IsInterior = 0;
+internal bool IsInterior = false;
 
 #define STRING_SIZE 256
 
@@ -436,7 +436,9 @@ internal BOOL Initialize()
   
   RandomGeneratorInitialize(batchesCount);
   TimerQueue = CreateTimerQueue();
-  InitializeGrid();
+  
+  InitializeMainGrid();
+  InitializeSolstheimGrid();
   
   return TRUE;
 }

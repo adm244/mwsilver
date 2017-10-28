@@ -128,6 +128,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MW_FUNCTIONS_H
 #define MW_FUNCTIONS_H
 
+#include "mw_types.h"
+
 #define MW_SCRIPT_LINE 512
 
 internal uint32 globalTES = 0x007C67E0;
@@ -209,7 +211,7 @@ internal uint8 SaveGame(char *displayName, char *fileName)
   }
 }
 
-internal uint32 GetCurrentCell(uint32 TESObject)
+internal TESCell * GetCurrentCell(uint32 TESObject)
 {
   __asm {
     mov ecx, TESObject
@@ -217,19 +219,23 @@ internal uint32 GetCurrentCell(uint32 TESObject)
   }
 }
 
-internal uint8 IsPlayerInInterior()
+internal bool IsCellInterior(TESCell *cell)
 {
-  uint8 result = 0;
+  __asm {
+    mov ecx, cell
+    call IsInteriorAddress
+  }
+}
+
+internal inline bool IsPlayerInInterior()
+{
+  bool result = false;
 
   uint32 TESObject = GetTESObject();
-  uint32 TESCurrentCell = GetCurrentCell(TESObject);
+  TESCell *currentCell = GetCurrentCell(TESObject);
 
-  if( TESCurrentCell ) {
-    __asm {
-      mov ecx, TESCurrentCell
-      call IsInteriorAddress
-      mov result, al
-    }
+  if( currentCell ) {
+    result = IsCellInterior(currentCell);
   }
   
   return result;
