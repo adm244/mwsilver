@@ -38,8 +38,8 @@ struct TESRegion {
   char signature[4]; // 0x04
   uint32 unk08;
   uint32 unk0C;
-  char name[32]; // 0x10
-  char description[32]; // 0x30
+  char id[32]; // 0x10
+  char name[32]; // 0x30
   uint8 clearChance; // 0x50
   uint8 cloudyChance; // 0x51
   uint8 foggyChance; // 0x52

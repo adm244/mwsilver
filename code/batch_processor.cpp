@@ -107,20 +107,35 @@ internal bool IsOnSolstheim(TESCell *cell)
 
   if( IsCellInterior(cell) ) {
     //TODO(adm244): get list of solstheim interiors and check against them
-  } else {
-    //FIX(adm244): move region name into string array and compare in a loop
     
-    if( !strncmp(cell->region->name, "Hirstaang Forest Region", REGN_NAME_LENGTH) ) {
+    if( strstr(cell->name, "Solstheim") ) {
       result = true;
-    } else if( !strncmp(cell->region->name, "Brodir Grove Region", REGN_NAME_LENGTH) ) {
+    } else if( strstr(cell->name, "Raven Rock") ) {
       result = true;
-    } else if( !strncmp(cell->region->name, "Isinfier Plains Region", REGN_NAME_LENGTH) ) {
+    } else if( strstr(cell->name, "Fort Frostmoth") ) {
       result = true;
-    } else if( !strncmp(cell->region->name, "Moesring Mountains Region", REGN_NAME_LENGTH) ) {
+    } else if( strstr(cell->name, "Skaal") ) {
       result = true;
-    } else if( !strncmp(cell->region->name, "Felsaad Coast Region", REGN_NAME_LENGTH) ) {
+    } else if( strstr(cell->name, "Thirsk") ) {
       result = true;
-    } else if( !strncmp(cell->region->name, "Thirsk Region", REGN_NAME_LENGTH) ) {
+    } else if( strstr(cell->name, "Солстхейм") ) {
+      result = true;
+    }
+  } else {
+    //FIX(adm244): move region id into string array and compare in a loop
+    //TODO(adm244): get list of solstheim regions and check agains them
+    
+    if( !strncmp(cell->region->id, "Hirstaang Forest Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->id, "Brodir Grove Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->id, "Isinfier Plains Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->id, "Moesring Mountains Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->id, "Felsaad Coast Region", REGN_NAME_LENGTH) ) {
+      result = true;
+    } else if( !strncmp(cell->region->id, "Thirsk Region", REGN_NAME_LENGTH) ) {
       result = true;
     }
   }
