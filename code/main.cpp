@@ -54,21 +54,23 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Change random algorithm for @teleport command (normal distibution?)
     - Disable autosave at teleportation
     - @teleport: determine the current island and teleport within it only
-    
     - Move config code into separate file
+    
+    - Move random code into separate file
   TODO:
     - @teleport: re-roll if to close to player cell?
     
     - Load batches from a "batches" folder
     - Save queue at game save and restore it later
     
-    - Move random code into random.c
-    - Implement a set structure to replace current duplicates removal algorithm
+    - Create structure to store all plugin related variables
+    - Get rid of globals
+    - Move all platform-dependent code into separate file
     - Replace standard library file io with common/fileio
+    - Move game independent stuff into statically linked library?
+    - Implement a set structure to replace current duplicates removal algorithm
     - Add dynamic memory allocation support through common/memlib
     - Rewrite batch file parsing code (get rid of streaming, read entire file and parse it)
-    - Move all platform-dependent code into separate file
-    - Move game independent stuff into statically linked library?
     - Automate hooking proccess (either patch on the call, or something more complicated)
     - Get rid of c++ string and stdio.h
     - Get rid of C Runtime Library
@@ -88,6 +90,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "common/types.h"
 #include "common/utils.cpp"
 #include "common/queue.cpp"
+#include "mw/functions.cpp"
+
+//FIX(adm244): hack!
+#define MAX_BATCHES 50
+#include "random/functions.cpp"
 
 #define AUTOSAVE_DISPLAY "AutoSave"
 #define AUTOSAVE_FILENAME "autosave"
@@ -96,14 +103,9 @@ internal HMODULE mwsilver = 0;
 internal HANDLE TimerQueue = 0;
 internal bool IsInterior = false;
 
-#include "mw/functions.cpp"
-
-#include "random/randomlib.c"
-
 #include "config.cpp"
 #include "batch_processor.cpp"
 #include "hooks.cpp"
-
 
 internal HANDLE QueueHandle = 0;
 internal DWORD QueueThreadID = 0;
@@ -113,46 +115,6 @@ internal Queue InteriorPendingQueue;
 internal Queue ExteriorPendingQueue;
 
 internal uint8 IsTimedOut = 0;
-
-internal int randomGenerated = 0;
-internal uint8 randomCounters[MAX_BATCHES];
-
-internal void RandomClearCounters()
-{
-  randomGenerated = 0;
-  for( int i = 0; i < MAX_BATCHES; ++i ) {
-    randomCounters[i] = 0;
-  }
-}
-
-internal int GetNextBatchIndex(int batchesCount)
-{
-  if( randomGenerated >= batchesCount ) {
-    RandomClearCounters();
-  }
-  
-  int value;
-  for( ;; ) {
-    value = RandomInt(0, batchesCount - 1);
-    if( randomCounters[value] == 0 ) break;
-  }
-  
-  ++randomGenerated;
-  randomCounters[value] = 1;
-  
-  return value;
-}
-
-internal void RandomGeneratorInitialize(int batchesCount)
-{
-  int ticksPassed = GetTickCount();
-  
-  int ij = ticksPassed % 31328;
-  int kj = ticksPassed % 30081;
-  
-  RandomInitialize(ij, kj);
-  RandomClearCounters();
-}
 
 /*internal void DrawText(char *text)
 {
