@@ -93,7 +93,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "mw/functions.cpp"
 
 //FIX(adm244): hack!
+#define MAX_SECTION 32767
+#define MAX_FILENAME 260
+#define MAX_DESCRIPTION 255
 #define MAX_BATCHES 50
+
 #include "random/functions.cpp"
 
 #define AUTOSAVE_DISPLAY "AutoSave"
