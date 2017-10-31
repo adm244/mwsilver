@@ -324,13 +324,13 @@ internal void InitializeSolstheimGrid()
 //
 // returns true if at least 1 bat file loaded successefully
 // returns false if no bat files were loaded
-internal bool InitBatchFiles(BatchData *batches, int *num)
+internal bool InitBatchFiles(HMODULE module, BatchData *batches, int *num)
 {
   char buf[MAX_SECTION];
   char *str = buf;
   int index = 0;
   
-  IniReadSection(CONFIG_FILE, "batch", buf, MAX_SECTION);
+  IniReadSection(module, CONFIG_FILE, "batch", buf, MAX_SECTION);
   
   while( true ){
     char *p = strrchr(str, '=');
@@ -463,16 +463,17 @@ internal bool ExecuteBatch(char *filename)
 //NOTE(adm244): initializes plugin variables
 // returns true if atleast 1 batch file was successefully loaded
 // returns false otherwise
-internal int InitilizeBatches()
+internal int InitilizeBatches(HMODULE module)
 {
   keys_active = true;
-  InitBatchFiles(batches, &batches_count);
+  InitBatchFiles(module, batches, &batches_count);
   ReadBatchDescriptions(batches);
   
-  CommandToggle.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyToggle", VK_HOME);
+  //TODO(adm244): rewrite IniRead* functions so they accept full path to config file folder
+  CommandToggle.key = IniReadInt(module, CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyToggle", VK_HOME);
   CommandToggle.enabled = true;
   
-  CommandRandom.key = IniReadInt(CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyRandomBatch", VK_ADD);
+  CommandRandom.key = IniReadInt(module, CONFIG_FILE, CONFIG_KEYS_SECTION, "iKeyRandomBatch", VK_ADD);
   CommandRandom.enabled = true;
   
   return(batches_count);

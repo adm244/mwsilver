@@ -53,15 +53,15 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Print ingame batch description taken from file (first line?) when random command is activated
     - Change random algorithm for @teleport command (normal distibution?)
     - Disable autosave at teleportation
-    
     - @teleport: determine the current island and teleport within it only
+    
+    - Move config code into separate file
   TODO:
     - @teleport: re-roll if to close to player cell?
     
     - Load batches from a "batches" folder
     - Save queue at game save and restore it later
     
-    - Move config code into separate file
     - Move random code into random.c
     - Implement a set structure to replace current duplicates removal algorithm
     - Replace standard library file io with common/fileio
@@ -85,34 +85,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <windows.h>
 
-#include "types.h"
-
-#define CONFIG_FILE "mwsilver.ini"
-
-#define CONFIG_SETTINGS_SECTION "settings"
-#define CONFIG_MESSAGE_SECTION "message"
-#define CONFIG_KEYS_SECTION "keys"
-
-#define CONFIG_PRESAVE "bSaveGamePreActivation"
-#define CONFIG_POSTSAVE "bSaveGamePostActivation"
-#define CONFIG_SHOWMESSAGES "bShowMessages"
-#define CONFIG_SHOWMESSAGES_RANDOM "bShowMessagesRandom"
-#define CONFIG_SAVEFILE "sSaveFile"
-#define CONFIG_SAVENAME "sSaveName"
-#define CONFIG_MESSAGE "sMessage"
-#define CONFIG_MESSAGE_RANDOM "sMessageRandom"
-#define CONFIG_MESSAGE_TOGGLE_ON "sMessageToggleOn"
-#define CONFIG_MESSAGE_TOGGLE_OFF "sMessageToggleOff"
-#define CONFIG_TIMER "iTimeout"
-#define CONFIG_AUTOSAVE "bAutoSave"
-
-#define CONFIG_DEFAULT_SAVEFILE "mwsilver_save"
-#define CONFIG_DEFAULT_SAVENAME "MWSilver Save"
-#define CONFIG_DEFAULT_MESSAGE "%s activated"
-#define CONFIG_DEFAULT_MESSAGE_RANDOM "%s activated"
-#define CONFIG_DEFAULT_MESSAGE_TOGGLE_ON "Commands are ON"
-#define CONFIG_DEFAULT_MESSAGE_TOGGLE_OFF "Commands are OFF"
-#define CONFIG_DEFAULT_TIMER (15 * 60 * 1000)
+#include "common/types.h"
+#include "common/utils.cpp"
+#include "common/queue.cpp"
 
 #define AUTOSAVE_DISPLAY "AutoSave"
 #define AUTOSAVE_FILENAME "autosave"
@@ -121,21 +96,14 @@ internal HMODULE mwsilver = 0;
 internal HANDLE TimerQueue = 0;
 internal bool IsInterior = false;
 
-#define STRING_SIZE 256
+#include "mw/functions.cpp"
 
-internal char SaveFileName[STRING_SIZE];
-internal char SaveDisplayName[STRING_SIZE];
-internal char Message[STRING_SIZE];
-internal char MessageRandom[STRING_SIZE];
-internal char MessageOn[STRING_SIZE];
-internal char MessageOff[STRING_SIZE];
+#include "random/randomlib.c"
 
-#include "randomlib.c"
-#include "utils.cpp"
-#include "mw_functions.cpp"
+#include "config.cpp"
 #include "batch_processor.cpp"
-#include "queue.cpp"
 #include "hooks.cpp"
+
 
 internal HANDLE QueueHandle = 0;
 internal DWORD QueueThreadID = 0;
@@ -144,15 +112,7 @@ internal Queue BatchQueue;
 internal Queue InteriorPendingQueue;
 internal Queue ExteriorPendingQueue;
 
-internal bool ShowMessages = false;
-internal bool ShowMessagesRandom = true;
-internal bool ActualGameplay = false;
-internal bool SavePreActivation = false;
-internal bool SavePostActivation = false;
-internal bool AutoSaveEnabled = true;
-
 internal uint8 IsTimedOut = 0;
-internal uint Timeout = 0;
 
 internal int randomGenerated = 0;
 internal uint8 randomCounters[MAX_BATCHES];
@@ -391,40 +351,15 @@ internal void ReloadEnd()
   ActualGameplay = true;
 }
 
-internal void SettingsInitialize()
-{
-  SavePreActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_PRESAVE, false);
-  SavePostActivation = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_POSTSAVE, true);
-  ShowMessages = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES, true);
-  ShowMessagesRandom = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES_RANDOM, true);
-  AutoSaveEnabled = IniReadBool(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_AUTOSAVE, true);
-  
-  IniReadString(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SAVEFILE,
-    CONFIG_DEFAULT_SAVEFILE, SaveFileName, STRING_SIZE);
-  IniReadString(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SAVENAME,
-    CONFIG_DEFAULT_SAVENAME, SaveDisplayName, STRING_SIZE);
-    
-  IniReadString(CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE,
-    CONFIG_DEFAULT_MESSAGE, Message, STRING_SIZE);
-  IniReadString(CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE_RANDOM,
-    CONFIG_DEFAULT_MESSAGE_RANDOM, MessageRandom, STRING_SIZE);
-  IniReadString(CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE_TOGGLE_ON,
-    CONFIG_DEFAULT_MESSAGE_TOGGLE_ON, MessageOn, STRING_SIZE);
-  IniReadString(CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE_TOGGLE_OFF,
-    CONFIG_DEFAULT_MESSAGE_TOGGLE_OFF, MessageOff, STRING_SIZE);
-  
-  Timeout = IniReadInt(CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_TIMER, CONFIG_DEFAULT_TIMER);
-}
-
 internal BOOL Initialize()
 {
   HookFirstLoading();
   HookReloading();
   HookMainLoop();
   
-  SettingsInitialize();
+  SettingsInitialize(mwsilver);
   
-  int batchesCount = InitilizeBatches();
+  int batchesCount = InitilizeBatches(mwsilver);
   if( batchesCount <= 0 ) {
     MessageBox(0, "Batch files could not be located!", "Error", MB_OK | MB_ICONERROR);
   }

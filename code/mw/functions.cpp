@@ -128,7 +128,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef MW_FUNCTIONS_H
 #define MW_FUNCTIONS_H
 
-#include "mw_types.h"
+#include "mw/types.h"
 
 #define MW_SCRIPT_LINE 512
 

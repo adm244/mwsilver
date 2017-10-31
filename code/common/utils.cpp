@@ -53,37 +53,37 @@ internal std::string GetDirectoryFromPath(std::string path)
 }
 
 //NOTE(adm244): retrieves an integer value from specified section and value of ini file
-internal int IniReadInt(char *inifile, char *section, char *param, int def)
+internal int IniReadInt(HMODULE module, char *inifile, char *section, char *param, int def)
 {
   char curdir[MAX_PATH];
-  GetModuleFileNameA(mwsilver, curdir, sizeof(curdir));
+  GetModuleFileNameA(module, curdir, sizeof(curdir));
   std::string fname = GetDirectoryFromPath(curdir) + inifile;
   
   return GetPrivateProfileIntA(section, param, def, fname.c_str());
 }
 
 //NOTE(adm244): retrieves a bool value from specified section and value of ini file
-internal bool IniReadBool(char *inifile, char *section, char *param, bool def)
+internal bool IniReadBool(HMODULE module, char *inifile, char *section, char *param, bool def)
 {
-  int value = IniReadInt(inifile, section, param, def ? 1 : 0);
+  int value = IniReadInt(module, inifile, section, param, def ? 1 : 0);
   return(value != 0 ? true : false);
 }
 
 //NOTE(adm244): retrieves a string value from specified section and value of ini file and stores it in buffer
-internal int IniReadString(char *inifile, char *section, char *param, char *default, char *output, int size)
+internal int IniReadString(HMODULE module, char *inifile, char *section, char *param, char *default, char *output, int size)
 {
   char buffer[MAX_PATH];
-  GetModuleFileNameA(mwsilver, buffer, sizeof(buffer));
+  GetModuleFileNameA(module, buffer, sizeof(buffer));
   std::string fname = GetDirectoryFromPath(buffer) + inifile;
 
   return GetPrivateProfileStringA(section, param, default, output, size, fname.c_str());
 }
 
 //NOTE(adm244): retrieves all key-value pairs from specified section of ini file and stores it in buffer
-internal DWORD IniReadSection(char *inifile, char *section, char *buffer, DWORD bufsize)
+internal DWORD IniReadSection(HMODULE module, char *inifile, char *section, char *buffer, DWORD bufsize)
 {
   char curdir[MAX_PATH];
-  GetModuleFileNameA(mwsilver, curdir, sizeof(curdir));
+  GetModuleFileNameA(module, curdir, sizeof(curdir));
   std::string fname = GetDirectoryFromPath(curdir) + inifile;
   
   return GetPrivateProfileSectionA(section, buffer, bufsize, fname.c_str());
