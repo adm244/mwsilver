@@ -55,8 +55,9 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Disable autosave at teleportation
     - @teleport: determine the current island and teleport within it only
     - Move config code into separate file
-    
     - Move random code into separate file
+    
+    - Move teleport code into separate file
   TODO:
     - @teleport: re-roll if to close to player cell?
     
@@ -90,7 +91,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "common/types.h"
 #include "common/utils.cpp"
 #include "common/queue.cpp"
-#include "mw/functions.cpp"
 
 //FIX(adm244): hack!
 #define MAX_SECTION 32767
@@ -108,6 +108,7 @@ internal HANDLE TimerQueue = 0;
 internal bool IsInterior = false;
 
 #include "config.cpp"
+#include "mw/functions.cpp"
 #include "batch_processor.cpp"
 #include "hooks.cpp"
 
@@ -130,35 +131,6 @@ internal uint8 IsTimedOut = 0;
   
   DrawText(mwDC, text, -1, &mwWindowRect, DT_TOP | DT_CENTER);
 }*/
-
-internal void DisplayMessage(char *message)
-{
-  ShowGameMessage(message, 0, 1);
-}
-
-internal void DisplaySuccessMessage(char *batchName)
-{
-  char statusString[260];
-  sprintf(statusString, Message, batchName);
-  
-  ConsolePrint(globalStatePointer, statusString);
-  
-  if( ShowMessages ) {
-    DisplayMessage(statusString);
-  }
-}
-
-internal void DisplayRandomSuccessMessage(char *batchName)
-{
-  char statusString[260];
-  sprintf(statusString, MessageRandom, batchName);
-  
-  ConsolePrint(globalStatePointer, statusString);
-  
-  if( ShowMessagesRandom ) {
-    DisplayMessage(statusString);
-  }
-}
 
 internal inline void AutoSave()
 {
