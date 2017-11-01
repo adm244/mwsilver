@@ -57,46 +57,51 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define STRING_SIZE 256
 
-internal char SaveFileName[STRING_SIZE];
-internal char SaveDisplayName[STRING_SIZE];
-internal char Message[STRING_SIZE];
-internal char MessageRandom[STRING_SIZE];
-internal char MessageOn[STRING_SIZE];
-internal char MessageOff[STRING_SIZE];
+struct SilverStrings {
+  char SaveFileName[STRING_SIZE];
+  char SaveDisplayName[STRING_SIZE];
+  char Message[STRING_SIZE];
+  char MessageRandom[STRING_SIZE];
+  char MessageOn[STRING_SIZE];
+  char MessageOff[STRING_SIZE];
+};
 
-internal bool ShowMessages = false;
-internal bool ShowMessagesRandom = true;
-internal bool ActualGameplay = false;
-internal bool SavePreActivation = false;
-internal bool SavePostActivation = false;
-internal bool AutoSaveEnabled = true;
+struct SilverSettings {
+  bool ShowMessages;
+  bool ShowMessagesRandom;
+  bool SavePreActivation;
+  bool SavePostActivation;
+  bool AutoSaveEnabled;
+  uint Timeout;
+};
 
-internal uint Timeout = 0;
+internal SilverStrings Strings;
+internal SilverSettings Settings;
 
 internal void SettingsInitialize(HMODULE module)
 {
   //TODO(adm244): rewrite using full path in these functions (pass it into the functions)
-  SavePreActivation = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_PRESAVE, false);
-  SavePostActivation = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_POSTSAVE, true);
-  ShowMessages = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES, true);
-  ShowMessagesRandom = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES_RANDOM, true);
-  AutoSaveEnabled = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_AUTOSAVE, true);
+  Settings.SavePreActivation = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_PRESAVE, false);
+  Settings.SavePostActivation = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_POSTSAVE, false);
+  Settings.ShowMessages = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES, false);
+  Settings.ShowMessagesRandom = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SHOWMESSAGES_RANDOM, true);
+  Settings.AutoSaveEnabled = IniReadBool(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_AUTOSAVE, true);
   
   IniReadString(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SAVEFILE,
-    CONFIG_DEFAULT_SAVEFILE, SaveFileName, STRING_SIZE);
+    CONFIG_DEFAULT_SAVEFILE, Strings.SaveFileName, STRING_SIZE);
   IniReadString(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_SAVENAME,
-    CONFIG_DEFAULT_SAVENAME, SaveDisplayName, STRING_SIZE);
+    CONFIG_DEFAULT_SAVENAME, Strings.SaveDisplayName, STRING_SIZE);
     
   IniReadString(module, CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE,
-    CONFIG_DEFAULT_MESSAGE, Message, STRING_SIZE);
+    CONFIG_DEFAULT_MESSAGE, Strings.Message, STRING_SIZE);
   IniReadString(module, CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE_RANDOM,
-    CONFIG_DEFAULT_MESSAGE_RANDOM, MessageRandom, STRING_SIZE);
+    CONFIG_DEFAULT_MESSAGE_RANDOM, Strings.MessageRandom, STRING_SIZE);
   IniReadString(module, CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE_TOGGLE_ON,
-    CONFIG_DEFAULT_MESSAGE_TOGGLE_ON, MessageOn, STRING_SIZE);
+    CONFIG_DEFAULT_MESSAGE_TOGGLE_ON, Strings.MessageOn, STRING_SIZE);
   IniReadString(module, CONFIG_FILE, CONFIG_MESSAGE_SECTION, CONFIG_MESSAGE_TOGGLE_OFF,
-    CONFIG_DEFAULT_MESSAGE_TOGGLE_OFF, MessageOff, STRING_SIZE);
+    CONFIG_DEFAULT_MESSAGE_TOGGLE_OFF, Strings.MessageOff, STRING_SIZE);
   
-  Timeout = IniReadInt(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_TIMER, CONFIG_DEFAULT_TIMER);
+  Settings.Timeout = IniReadInt(module, CONFIG_FILE, CONFIG_SETTINGS_SECTION, CONFIG_TIMER, CONFIG_DEFAULT_TIMER);
 }
 
 #endif

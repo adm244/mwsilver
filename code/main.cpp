@@ -58,13 +58,13 @@ OTHER DEALINGS IN THE SOFTWARE.
     - Move random code into separate file
     
     - Move teleport code into separate file
+    - Create structure to store all config related variables
   TODO:
     - @teleport: re-roll if to close to player cell?
     
     - Load batches from a "batches" folder
     - Save queue at game save and restore it later
     
-    - Create structure to store all plugin related variables
     - Get rid of globals
     - Move all platform-dependent code into separate file
     - Replace standard library file io with common/fileio
@@ -105,7 +105,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 internal HMODULE mwsilver = 0;
 internal HANDLE TimerQueue = 0;
+
 internal bool IsInterior = false;
+internal bool ActualGameplay = false;
 
 #include "config.cpp"
 #include "mw/functions.cpp"
@@ -121,41 +123,29 @@ internal Queue ExteriorPendingQueue;
 
 internal uint8 IsTimedOut = 0;
 
-/*internal void DrawText(char *text)
-{
-  HWND mwWindow = FindWindow("Morrowind", 0);
-  HDC mwDC = GetDC(mwWindow);
-  
-  RECT mwWindowRect;
-  GetClientRect(mwWindow, &mwWindowRect);
-  
-  DrawText(mwDC, text, -1, &mwWindowRect, DT_TOP | DT_CENTER);
-}*/
-
 internal inline void AutoSave()
 {
-  if( AutoSaveEnabled ) {
+  if( Settings.AutoSaveEnabled ) {
     SaveGame(AUTOSAVE_DISPLAY, AUTOSAVE_FILENAME);
   }
 }
 
 internal inline void MakePreSave()
 {
-  if( SavePreActivation ) {
+  if( Settings.SavePreActivation ) {
     SaveGame("PreActivation", "pre");
   }
 }
 
 internal inline void MakePostSave()
 {
-  if( SavePostActivation ) {
+  if( Settings.SavePostActivation ) {
     SaveGame("PostActivation", "post");
   }
 }
 
 internal VOID CALLBACK TimerQueueCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 {
-  //RandomGeneratorInitialize();
   RandomClearCounters();
   
   IsTimedOut = 1;
@@ -210,14 +200,12 @@ internal void ProcessQueue(Queue *queue, bool checkExecState)
 internal DWORD WINAPI QueueHandler(LPVOID data)
 {
   for(;;) {
-    //DrawText("Test message string. Is it working?");
-    
     if( IsActivated(&CommandToggle) ) {
       keys_active = !keys_active;
       
       //TODO(adm244): display it somehow on loading screen
       if( ActualGameplay ) {
-        DisplayMessage(keys_active ? MessageOn : MessageOff);
+        DisplayMessage(keys_active ? Strings.MessageOn : Strings.MessageOff);
       }
     }
   
@@ -242,7 +230,7 @@ internal void GameLoop()
 {
   if( IsTimedOut ) {
     IsTimedOut = 0;
-    TimerCreate(TimerQueue, Timeout);
+    TimerCreate(TimerQueue, Settings.Timeout);
   }
   
   if( ActualGameplay ) {
@@ -275,7 +263,7 @@ internal void FirstLoadEnd()
   ActualGameplay = true;
   
   if( TimerQueue ) {
-    TimerCreate(TimerQueue, Timeout);
+    TimerCreate(TimerQueue, Settings.Timeout);
   }
 }
 

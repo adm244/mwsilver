@@ -38,11 +38,11 @@ internal void DisplayMessage(char *message)
 internal void DisplaySuccessMessage(char *batchName)
 {
   char statusString[260];
-  sprintf(statusString, Message, batchName);
+  sprintf(statusString, Strings.Message, batchName);
   
   ConsolePrint(globalStatePointer, statusString);
   
-  if( ShowMessages ) {
+  if( Settings.ShowMessages ) {
     DisplayMessage(statusString);
   }
 }
@@ -50,11 +50,11 @@ internal void DisplaySuccessMessage(char *batchName)
 internal void DisplayRandomSuccessMessage(char *batchName)
 {
   char statusString[260];
-  sprintf(statusString, MessageRandom, batchName);
+  sprintf(statusString, Strings.MessageRandom, batchName);
   
   ConsolePrint(globalStatePointer, statusString);
   
-  if( ShowMessagesRandom ) {
+  if( Settings.ShowMessagesRandom ) {
     DisplayMessage(statusString);
   }
 }

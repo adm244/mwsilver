@@ -192,7 +192,7 @@ internal bool ExecuteBatch(char *filename)
       } else if( strcmp(line, BATCH_DEFAULT) == 0 ) {
         executionState = EXEC_DEFAULT;
       } else if( strcmp(line, BATCH_SAVEGAME) == 0 ) {
-        SaveGame(SaveDisplayName, SaveFileName);
+        SaveGame(Strings.SaveDisplayName, Strings.SaveFileName);
       } else if( strcmp(line, BATCH_TELEPORT) == 0 ) {
         //TODO(adm244): rewrite so it could use custom commands (search by table?)
         Teleport();
