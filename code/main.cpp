@@ -56,24 +56,23 @@ OTHER DEALINGS IN THE SOFTWARE.
     - @teleport: determine the current island and teleport within it only
     - Move config code into separate file
     - Move random code into separate file
-    
     - Move teleport code into separate file
     - Create structure to store all config related variables
   TODO:
-    - @teleport: re-roll if to close to player cell?
-    
-    - Load batches from a "batches" folder
-    - Save queue at game save and restore it later
-    
     - Get rid of globals
     - Move all platform-dependent code into separate file
     - Replace standard library file io with common/fileio
     - Move game independent stuff into statically linked library?
-    - Implement a set structure to replace current duplicates removal algorithm
-    - Add dynamic memory allocation support through common/memlib
+    
     - Rewrite batch file parsing code (get rid of streaming, read entire file and parse it)
-    - Automate hooking proccess (either patch on the call, or something more complicated)
+    - Implement a set structure to replace current duplicates removal algorithm
     - Get rid of c++ string and stdio.h
+    
+    - Load batches from a "batches" folder
+    - Save queue at game save and restore it later
+    
+    - Add dynamic memory allocation support through common/memlib
+    - Automate hooking proccess (either patch on the call, or something more complicated)
     - Get rid of C Runtime Library
     - Code cleanup
   DROPPED:
@@ -82,6 +81,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     - @teleport: modify random to be more uniform (switched to normal distribution)
     - @teleport_solstheim: add new command to teleport within solstheim (checking which island player is on)
     - Delete interactive save after it's loading (useless)
+    - @teleport: re-roll if to close to player cell? (nah)
 */
 
 #include <stdio.h>
